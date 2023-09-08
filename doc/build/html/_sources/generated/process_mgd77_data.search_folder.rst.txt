@@ -1,0 +1,6 @@
+process\_mgd77\_data.search\_folder
+===================================
+
+.. currentmodule:: process_mgd77_data
+
+.. autofunction:: search_folder
