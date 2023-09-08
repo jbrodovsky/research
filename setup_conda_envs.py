@@ -1,10 +1,28 @@
 """
-This is a Python scripte that will create the required conda environments that I typically use with my research. 
+This is a Python script that will create the required conda environments that I typically use with my research. 
 While I like Anaconda Navigator, it (depending on the configuration of your IT settings) can be buggy, and 
 sometimes it is simply best to do a fresh re-install and re-build the environments from scratch. Given that, in
 such a case, the base version of Conda itself may be out of date, we cannot rely on using the specific Python
 API built into conda and should instead call it via the command line interface (which we will acces from Python
 via the subprocess module). The base conda environment should be seperately and manually maintained.
+
+The current list of base packages:
+
+* numpy 
+* scipy 
+* matplotlib 
+* pandas 
+* scikit-learn 
+* sympy 
+* seaborn 
+* jupyter 
+* notebook 
+* h5py 
+* tqdm 
+* pandoc 
+* black 
+* pytest 
+* sphinx
 """
 
 # List of base packages I like to use withing every environment
@@ -24,7 +42,17 @@ environments = {
 import subprocess, os
 
 
-def conda_environment_exists(env_name: str):
+def conda_environment_exists(env_name: str) -> bool:
+    """
+    Check to see if the `conda` environment `env_name` exists.
+
+    Parameters
+    ----------
+    :param env_name: the environment name to check.
+    :type env_name: string
+
+    :returns: True if the environment exists, false otherwise.
+    """
     try:
         result = subprocess.run(
             f"conda info --envs", capture_output=True, text=True, check=True
@@ -38,7 +66,21 @@ def conda_environment_exists(env_name: str):
         return False
 
 
-def create_conda_environment(env_name: str, python_version, packages: str):
+def create_conda_environment(env_name: str, python_version, packages: str) -> None:
+    """
+    Create the `conda` environment `env_name` with a given version of Python and a set of additional packages to install.
+
+    Parameters
+    ----------
+    :param env_name: the environment name to check.
+    :type env_name: string
+    :param python_version: the version number of Python to install.
+    :type python_version: string
+    :param packages: a space-separated string of packages to install
+    :type pacakges: string
+
+    :returns: None
+    """
     if conda_environment_exists(env_name):
         print(f"<{env_name}> already exists")
         print("Checking to see if all desired packages are installed")
@@ -71,6 +113,16 @@ def create_conda_environment(env_name: str, python_version, packages: str):
 
 
 def is_package_installed(env_name: str, package_name: str):
+    """
+    Check to see if the given package `package_name` is installed in the `conda` environment `evn_name`.
+
+    Parameters
+    ----------
+    :param env_name: the environment name to check.
+    :type env_name: string
+    :param package_name: the package name to check.
+    :type package_name: string
+    """
     try:
         result = subprocess.run(
             f"conda list -n {env_name} {package_name}",
@@ -88,6 +140,9 @@ def is_package_installed(env_name: str, package_name: str):
 
 
 def main():
+    """
+    Runs this module as a script and checks/creates the default specified environments. Might eventually switch this to reading in some sort of json or plain text file.
+    """
     for env_name in environments.keys():
         create_conda_environment(
             env_name,
