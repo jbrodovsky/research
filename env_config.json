@@ -1,0 +1,17 @@
+{
+    "base_packages": "numpy scipy matplotlib pandas scikit-learn sympy seaborn jupyter notebook h5py tqdm pandoc black pytest sphinx",
+    "environments": {
+        "python311": {
+            "python": 3.11,
+            "additional_packages": ""
+        },
+        "geophysical_nav": {
+            "python": 3.11,
+            "additional_packages": "haversine xarray cython filterpy"
+        },
+        "PyGMT": {
+            "python": "3.8",
+            "additional_packages": "pygmt"
+        }
+    }
+}

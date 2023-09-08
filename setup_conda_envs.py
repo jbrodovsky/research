@@ -25,20 +25,6 @@ The current list of base packages:
 * sphinx
 """
 
-# List of base packages I like to use withing every environment
-base_packages = "numpy scipy matplotlib pandas scikit-learn sympy seaborn jupyter notebook h5py tqdm pandoc black pytest sphinx"
-
-# List of environments to create along with their additional
-environments = {
-    "python311": {"python": 3.11, "additional_packages": ""},
-    "geophysical_nav": {
-        "python": 3.11,
-        "additional_packages": "haversine xarray cython",
-    },
-    "PyGMT": {"python": "3.8", "additional_packages": "pygmt"},
-}
-
-# ----------------------------------------------------------------
 import subprocess, os
 
 
@@ -86,7 +72,7 @@ def create_conda_environment(env_name: str, python_version, packages: str) -> No
         print("Checking to see if all desired packages are installed")
         packages_to_install = ""
         new_packages = False
-        for pkg in f"{base_packages} {packages}".split():
+        for pkg in f"{packages}".split():
             if not is_package_installed(env_name, pkg):
                 print(f"<{pkg}> not found")
                 packages_to_install += f"{pkg} "
@@ -105,7 +91,7 @@ def create_conda_environment(env_name: str, python_version, packages: str) -> No
         print(f"Creating conda environment: <{env_name}>")
         try:
             subprocess.run(
-                f"conda create -n {env_name} python={python_version} {base_packages} {packages} -y"
+                f"conda create -n {env_name} python={python_version} {packages} -y"
             )
             print(f"Environment <{env_name}> successfully created.")
         except:
@@ -143,11 +129,41 @@ def main():
     """
     Runs this module as a script and checks/creates the default specified environments. Might eventually switch this to reading in some sort of json or plain text file.
     """
+    from argparse import ArgumentParser
+    import json
+
+    parser = ArgumentParser(
+        prog="Conda Environment Setup Utility",
+        description="Sets up and pseudo-maintains a set of conda environments from a json file.",
+    )
+    parser.add_argument(
+        "--config", help="Path to environment configuration json file", required=True
+    )
+    args = parser.parse_args()
+
+    try:
+        # Open the JSON file in read mode
+        with open(args.config, "r") as file:
+            # Load the JSON data into a Python data structure
+            data = json.load(file)
+    except FileNotFoundError:
+        print(f"Error: The file '{args.config}' does not exist.")
+    except json.JSONDecodeError as e:
+        print(f"Error: JSON decoding failed. Details: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+    else:
+        # The code inside the 'else' block will only execute if no exceptions were raised.
+        print("JSON data loaded successfully.")
+        print(data)
+    environments = data["environments"]
+    base_packages = data["base_packages"]
+
     for env_name in environments.keys():
         create_conda_environment(
             env_name,
             environments[env_name]["python"],
-            environments[env_name]["additional_packages"],
+            f"{base_packages} {environments[env_name]['additional_packages']}",
         )
     print("Setup complete!")
 
