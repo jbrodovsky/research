@@ -11,9 +11,10 @@ This is something new!
 .. autosummary::
     :toctree: generated
     :template: custom-module-template.rst
-   process_mgd77_data
-   process_sensor_logger_data
+   process_dataset
    setup_conda_envs
+   gmt_tool
+   tools
 
 
 Indices and tables

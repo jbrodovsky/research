@@ -1,7 +1,7 @@
-﻿setup\_conda\_envs
-==================
+﻿gmt\_tool
+=========
 
-.. automodule:: setup_conda_envs
+.. automodule:: gmt_tool
   
    
    
@@ -13,9 +13,8 @@
    .. autosummary::
       :toctree:                             
    
-      conda_environment_exists
-      create_conda_environment
-      is_package_installed
+      get_map_section
+      load_map_file
       main
    
    

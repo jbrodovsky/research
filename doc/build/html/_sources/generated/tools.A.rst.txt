@@ -1,0 +1,6 @@
+tools.A
+=======
+
+.. currentmodule:: tools
+
+.. autodata:: A
