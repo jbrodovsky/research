@@ -134,19 +134,19 @@ def m77t_to_csv(data: pd.DataFrame) -> pd.DataFrame:
     times = (data["TIME"].astype(float)).apply(int)
     TZs = data["TIMEZONE"].astype(int)
     TZs = TZs.apply(lambda tz: f"+{tz:02}00" if tz >= 0 else f"{tz:02}00")
-
     times = times.apply(lambda time_int: f"{time_int // 100:02d}{time_int % 100:02d}")
     datetimes = dates.astype(str) + times.astype(str)
-
     TZs.index = datetimes.index
     datetimes += TZs.astype(str)
-
     DateTimes = pd.to_datetime(datetimes, format="%Y%m%d%H%M%z")
-
     data.index = DateTimes
+    # Clean up the rest of the data frame
     data = data.drop(columns=["DATE", "TIME", "TIMEZONE", "SURVEY_ID"])
     data = data.dropna(axis=1, how="all")
     data = data.dropna(axis=0, how="any")
+    # Remove duplicate time indecies
+    duplicate_mask = data.index.duplicated(keep="last")
+    data = data[~duplicate_mask]
 
     return data
 

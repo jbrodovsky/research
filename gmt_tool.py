@@ -6,6 +6,7 @@ import subprocess
 from argparse import ArgumentParser
 from tools import wrap_to_180
 import xarray as xr
+from numpy import ndarray
 
 
 def get_map_section(
@@ -15,23 +16,47 @@ def get_map_section(
     north_lat: float,
     map_type: str = "relief",
     map_res: str = "02m",
-    output_location: str = "./",
+    output_location: str = "./output.nc",
 ) -> xr.DataArray:
     """
     Function for querying the raw map to get map segments. This is the publicly facing function
     that should be used in other modules for reading in maps from raw data. If you don't need to
-    use raw data, use a load_map_file().
+    query the database and instead need to load a local map file use load_map_file() instead.
+    This function will query the remote GMT databases and save a local copy of the map section to
+    the location specified by output_location.
+
+    Parameters
+    ----------
+    :param west_lon: West longitude value in degrees.
+    :type west_lon: float
+    :param east_lon: East longitude value in degrees.
+    :type east_lon: float
+    :param south_lat: South latitude value in degrees.
+    :type south_lat: float
+    :param north_lat: North latitude value in degrees.
+    :type north_lat: float
+    :param map_type: Geophysical map type (relief, gravity, magnetic)
+    :type map_type: string
+    :param map_res: map resolution of output, all maps have 01d, 30m, 20m, 15m, 10m, 06m, 05m, 04m, 03m, and 02m; additionally gravity and relief have 01m; additionally, relief has 30s, 15s, 03s, 01s
+    :type map_res: string
+    :param output_location: filepath and filename to output location.
+    :type output_location: string
+
+    Returns
+    -------
+    :returns: xarray.DataArray
+
     """
     _get_map_section(
         west_lon, east_lon, south_lat, north_lat, map_type, map_res, output_location
     )
-    out = load_map_file(output_location)
+    out = load_map_file(f"{output_location}.nc")
     return out
 
 
 def load_map_file(filepath: str) -> xr.DataArray:
     """
-    Used to load the local .nc (netCDF) map files in to a Python xarray DataArray structure.
+    Used to load the local .nc (netCDF4) map files in to a Python xarray DataArray structure.
 
     Parameters
     -----------
@@ -40,8 +65,18 @@ def load_map_file(filepath: str) -> xr.DataArray:
 
     :returns: xarray.DataArray
     """
-    with xr.open_dataarray(f"{filepath}") as file:
-        return file.load()
+    return xr.load_dataarray(filepath)
+
+
+def get_map_point(geo_map: xr.DataArray, longitudes, latitudes) -> ndarray:
+    """
+    Wrapper on DataArray.interp() to query the map and simply get the returned values
+    """
+    vals = geo_map.interp(lon=longitudes, lat=latitudes)
+    if longitudes.shape == latitudes.shape and longitudes.shape > (1,):
+        return vals.data.diagonal()
+    else:
+        return vals.data
 
 
 def _get_map_section(
@@ -60,6 +95,7 @@ def _get_map_section(
     """
     west_lon = wrap_to_180(west_lon)
     east_lon = wrap_to_180(east_lon)
+    #    assert west_lon<east_lon, 'Longitude values invalid. Please check that the western value is less than the '
     # Validate map type and construct GMT map name to call via grdcut
     map_name = "earth_"
     if map_type == "gravity" and _validate_gravity_resolution(map_res):
@@ -73,13 +109,14 @@ def _get_map_section(
         return
 
     if map_type == "relief" and (map_res == "03s" or map_res == "01s"):
-        map_name += "g"
+        map_name += "_g"
     else:
-        map_name += "p"
+        map_name += "_p"
 
     cmd = f"gmt grdcut @{map_name} -Rd{west_lon}/{east_lon}/{south_lat}/{north_lat} -G{output_location}.nc"
-    out = subprocess.run(f"conda run -n PyGMT {cmd}", capture_output=True, shell=True)
-    print(out.stdout.decode())
+    print(cmd)
+    out = subprocess.run(f"conda run -n PyGMT {cmd}", capture_output=True, text=True)
+    print(out)
     return None
 
 
@@ -166,6 +203,28 @@ def _validate_relief_resoltion(res: str) -> bool:
     else:
         print("Invalid resolution for map type: RELIEF")
         return False
+
+
+def inflate_bounds(min_x, min_y, max_x, max_y, inflation_percent):
+    """
+    Used to inflate the cropping bounds for the map section
+    """
+
+    # Calculate the width and height of the original bounds
+    width = max_x - min_x
+    height = max_y - min_y
+
+    # Calculate the amount to inflate based on the percentage
+    inflate_x = width * inflation_percent
+    inflate_y = height * inflation_percent
+
+    # Calculate the new minimum and maximum coordinates
+    new_min_x = min_x - inflate_x
+    new_min_y = min_y - inflate_y
+    new_max_x = max_x + inflate_x
+    new_max_y = max_y + inflate_y
+
+    return new_min_x, new_min_y, new_max_x, new_max_y
 
 
 if __name__ == "__main__":

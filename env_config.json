@@ -7,7 +7,7 @@
         },
         "geophysical_nav": {
             "python": 3.11,
-            "additional_packages": "haversine xarray cython filterpy"
+            "additional_packages": "haversine xarray cython filterpy netCDF4"
         },
         "PyGMT": {
             "python": "3.8",
