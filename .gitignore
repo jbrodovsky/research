@@ -2,3 +2,5 @@
 /data/raw
 *.pyd
 pyins
+/results
+*.nc

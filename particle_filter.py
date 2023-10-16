@@ -93,6 +93,12 @@ def rmse(particles, truth):
     return np.sqrt(np.mean(diffs**2))
 
 
+def weighted_rmse(particles, weights, truth):
+    diffs = [haversine(truth, (p[0], p[1]), Unit.METERS) for p in particles]
+    diffs = np.asarray(diffs) * weights
+    return np.sqrt(diffs**2)
+
+
 def run_particle_filter(
     mu: np.ndarray,
     cov: np.ndarray,
@@ -104,11 +110,15 @@ def run_particle_filter(
 ):
     particles = np.random.multivariate_normal(mu, cov, (N,))
     weights = np.ones((N,)) / N
-    rms_error = np.zeros(len(data))
     error = np.zeros(len(data))
+    rms_error = np.zeros_like(error)
+    # wrmse = np.zeros_like(error)
+    # Initial values
     estimate = [weights @ particles]
-    rms_error[0] = rmse(particles, (data["LAT"][0], data["LAT"][0]))
     error[0] = haversine(estimate[0][:2], (data.LAT[0], data.LON[0]), Unit.METERS)
+    rms_error[0] = rmse(particles, (data["LAT"][0], data["LAT"][0]))
+    # wrmse[0] = weighted_rmse(particles, weights, (data["LAT"][0], data["LAT"][0]))
+
     for i, item in enumerate(data.iterrows()):
         if i > 0:
             row = item[1]
@@ -123,9 +133,10 @@ def run_particle_filter(
             particles[:] = particles[inds]
             # Calculate estimate and error
             estimate.append(weights @ particles)
-            rms_error[i] = rmse(particles, (row.LAT, row.LON))
             error[i] = haversine(
                 estimate[i][:2], (data.LAT[i], data.LON[i]), Unit.METERS
             )
+            rms_error[i] = rmse(particles, (row.LAT, row.LON))
+            # wrmse[i] = weighted_rmse(particles, weights, (row.LAT, row.LON))
     estimate = np.asarray(estimate)
-    return estimate, error, rms_error
+    return estimate, error, rms_error  # , wrmse
