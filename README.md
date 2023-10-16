@@ -23,3 +23,5 @@ Some notes:
         * Navigation in Dynamic Environments
 
 * For now, let's get my version of the geophysical particle filter up and running on the NOAA trackline datasets. Use `pyins` position and/or velocity observations to test closed-loop functionality.
+
+* We're going to stick with Python for now. A major C++ conversion might look good on my resume, but there apears to be several larger hurdles to building it as a package and automatically generating the documentation and the potential speed increase might not be particularly worth it.

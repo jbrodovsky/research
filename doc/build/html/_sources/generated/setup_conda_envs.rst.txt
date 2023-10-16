@@ -10,9 +10,8 @@
    
    
    .. rubric:: Functions
-
    .. autosummary::
-      :toctree:                                          
+      :toctree:                             
    
       conda_environment_exists
       create_conda_environment

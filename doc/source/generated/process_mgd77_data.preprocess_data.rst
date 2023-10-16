@@ -1,6 +1,0 @@
-process\_mgd77\_data.preprocess\_data
-=====================================
-
-.. currentmodule:: process_mgd77_data
-
-.. autofunction:: preprocess_data
