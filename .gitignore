@@ -1,6 +1,6 @@
-/__pycache__
-/data/raw
+./__pycache__
+./data/raw
 *.pyd
-pyins
-/results
+./pyins
+./results
 *.nc
