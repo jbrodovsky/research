@@ -41,7 +41,7 @@ def conda_environment_exists(env_name: str) -> bool:
     """
     try:
         result = subprocess.run(
-            f"conda info --envs", capture_output=True, text=True, check=True
+            "conda info --envs", capture_output=True, text=True, check=True, shell=True
         )
         output_lines = result.stdout.strip().split("\n")
         for line in output_lines:
@@ -79,7 +79,7 @@ def create_conda_environment(env_name: str, python_version, packages: str) -> No
                 new_packages = True
         if new_packages:
             print(f"New packages to install: {packages_to_install}")
-            subprocess.run(f"conda install {packages_to_install} -y")
+            subprocess.run(f"conda install {packages_to_install} -y", shell=True)
             print("All packages installed successfully")
         else:
             print("No new packages needed.")
@@ -91,7 +91,7 @@ def create_conda_environment(env_name: str, python_version, packages: str) -> No
         print(f"Creating conda environment: <{env_name}>")
         try:
             subprocess.run(
-                f"conda create -n {env_name} python={python_version} {packages} -y"
+                f"conda create -n {env_name} python={python_version} {packages} -y", shell='True'
             )
             print(f"Environment <{env_name}> successfully created.")
         except:
@@ -115,6 +115,7 @@ def is_package_installed(env_name: str, package_name: str):
             capture_output=True,
             text=True,
             check=True,
+            shell=True,
         )
         output_lines = result.stdout.strip().split("\n")
         for line in output_lines:
@@ -130,7 +131,7 @@ def main():
     Runs this module as a script and checks/creates the default specified environments. Might eventually switch this to reading in some sort of json or plain text file.
     """
     from argparse import ArgumentParser
-    import json
+    import json, sys
 
     parser = ArgumentParser(
         prog="Conda Environment Setup Utility",

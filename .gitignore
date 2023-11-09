@@ -1,6 +1,5 @@
-/__pycache__
-/data/raw
-*.pyd
-pyins
-/results
+/__pycache__/
+/data/raw/
+/results/
+gmt.history
 *.nc
