@@ -1,5 +1,5 @@
 """
-
+Toolbox for processing datasets
 """
 
 import pandas as pd
@@ -209,6 +209,28 @@ def process_mgd77_dataset(folder_path: str, output_path: str) -> None:
         )
         data_out = m77t_to_csv(data=data_in)
         data_out.to_csv(f"{output_path}/{filename}.csv")
+
+
+def find_periods(mask):
+    """ """
+    # Calculate the starting and ending indices for each period
+    periods = []
+    start_index = None
+
+    for idx, is_true in enumerate(mask):
+        if is_true and start_index is None:
+            start_index = idx
+        elif not is_true and start_index is not None:
+            end_index = idx - 1
+            periods.append((start_index, end_index))
+            start_index = None
+
+    # If the last period extends until the end of the mask, add it
+    if start_index is not None:
+        end_index = len(mask) - 1
+        periods.append((start_index, end_index))
+
+    return periods
 
 
 ###################
