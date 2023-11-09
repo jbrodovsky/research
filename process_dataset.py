@@ -211,8 +211,11 @@ def process_mgd77_dataset(folder_path: str, output_path: str) -> None:
         data_out.to_csv(f"{output_path}/{filename}.csv")
 
 
-def find_periods(mask):
-    """ """
+###################
+def find_periods(mask) -> list:
+    """
+    Find the start and stop indecies from a boolean mask.
+    """
     # Calculate the starting and ending indices for each period
     periods = []
     start_index = None
@@ -231,6 +234,14 @@ def find_periods(mask):
         periods.append((start_index, end_index))
 
     return periods
+
+
+def split_dataset(df: pd.DataFrame, periods: list) -> list:
+    subsections = []
+    for start, end in periods:
+        subsection = df.iloc[start : end + 1]  # Add 1 to include the end index
+        subsections.append(subsection)
+    return subsections
 
 
 ###################
