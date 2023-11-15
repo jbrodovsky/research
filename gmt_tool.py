@@ -4,9 +4,10 @@ Python module to access and save geophysical maps using GMT.
 
 import subprocess
 from argparse import ArgumentParser
-from tools import wrap_to_180
 import xarray as xr
 from numpy import ndarray
+
+from tools import wrap_to_180
 
 
 def get_map_section(
@@ -37,7 +38,9 @@ def get_map_section(
     :type north_lat: float
     :param map_type: Geophysical map type (relief, gravity, magnetic)
     :type map_type: string
-    :param map_res: map resolution of output, all maps have 01d, 30m, 20m, 15m, 10m, 06m, 05m, 04m, 03m, and 02m; additionally gravity and relief have 01m; additionally, relief has 30s, 15s, 03s, 01s
+    :param map_res: map resolution of output, all maps have 01d, 30m, 20m, 15m, 10m, 06m, 05m,
+    04m, 03m, and 02m; additionally gravity and relief have 01m; additionally, relief has 30s,
+    15s, 03s, 01s
     :type map_res: string
     :param output_location: filepath and filename to output location.
     :type output_location: string
@@ -95,7 +98,8 @@ def _get_map_section(
     """
     west_lon = wrap_to_180(west_lon)
     east_lon = wrap_to_180(east_lon)
-    #    assert west_lon<east_lon, 'Longitude values invalid. Please check that the western value is less than the '
+    # assert that the west longitude is less than the east longitude
+    assert west_lon < east_lon, "West longitude must be less than east longitude."
     # Validate map type and construct GMT map name to call via grdcut
     map_name = "earth_"
     if map_type == "gravity" and _validate_gravity_resolution(map_res):
@@ -113,40 +117,19 @@ def _get_map_section(
     else:
         map_name += "_p"
 
-    cmd = f"gmt grdcut @{map_name} -Rd{west_lon}/{east_lon}/{south_lat}/{north_lat} -G{output_location}.nc"
+    cmd = (
+        f"gmt grdcut @{map_name} -Rd{west_lon}/{east_lon}/{south_lat}/{north_lat}"
+        f"-G{output_location}.nc"
+    )
     print(cmd)
-    out = subprocess.run(f"conda run -n PyGMT {cmd}", capture_output=True, text=True)
+    out = subprocess.run(
+        f"conda run -n PyGMT {cmd}",
+        capture_output=True,
+        text=True,
+        check=True,
+        shell=True,
+    )
     print(out)
-    return None
-
-
-def main() -> None:
-    parser = ArgumentParser(
-        prog="GMT Map Access Tool",
-        description="A light weight wrapper for accesssing GMT maps via Python.",
-    )
-    parser.add_argument(
-        "--type",
-        default="relief",
-        choices=["relief", "gravity", "grav", "magnetic", "mag"],
-        required=True,
-        help="Map type to load.",
-    )
-    parser.add_argument(
-        "--res",
-        default="02m",
-        required=False,
-        help="Map resolution code. Available resolutions depend on the map selected.\nGravity:\t01d, 30m, 20m, 15m, 10m, 06m, 05m, 04m, 03m, 02m, 01m\nMagnetic:\t01d, 30m, 20m, 15m, 10m, 06m, 05m, 04m, 03m, 02m\nRelief:\t01d, 30m, 20m, 15m, 10m, 06m, 05m, 04m, 03m, 02m, 01m, 30s, 15s, 03s, 01s",
-    )
-    parser.add_argument(
-        "--location", default="./", required=False, help="File location to save output."
-    )
-    parser.add_argument(
-        "--name", default="map", required=False, help="Output file name."
-    )
-
-    args = parser.parse_args()
-    _get_map_section()
     return None
 
 
@@ -225,6 +208,83 @@ def inflate_bounds(min_x, min_y, max_x, max_y, inflation_percent):
     new_max_y = max_y + inflate_y
 
     return new_min_x, new_min_y, new_max_x, new_max_y
+
+
+def main() -> None:
+    """
+    Command line tool for accessing GMT maps.
+    """
+
+    parser = ArgumentParser(
+        prog="GMT Map Access Tool",
+        description="A light weight wrapper for accesssing GMT maps via Python.",
+    )
+    parser.add_argument(
+        "--type",
+        default="relief",
+        choices=["relief", "gravity", "grav", "magnetic", "mag"],
+        required=True,
+        help="Map type to load.",
+    )
+    parser.add_argument(
+        "--res",
+        default="02m",
+        required=False,
+        help=(
+            "Map resolution code. Available resolutions depend on the map selected.\nGravity:"
+            "\t01d, 30m, 20m, 15m, 10m, 06m, 05m, 04m, 03m, 02m, 01m\nMagnetic:\t01d, 30m, 20m, "
+            "15m, 10m, 06m, 05m, 04m, 03m, 02m\nRelief:\t01d, 30m, 20m, 15m, 10m, 06m, 05m, 04m, "
+            "03m, 02m, 01m, 30s, 15s, 03s, 01s"
+        ),
+    )
+    parser.add_argument(
+        "--location", default="./", required=False, help="File location to save output."
+    )
+    parser.add_argument(
+        "--name", default="map", required=False, help="Output file name."
+    )
+    # add arguements to the parser for west longitude, east longitude, south latitude,
+    # and north latitude
+    parser.add_argument(
+        "--west",
+        default=-180,
+        type=float,
+        required=True,
+        help="West longitude in degrees +/-180.",
+    )
+    parser.add_argument(
+        "--east",
+        default=180,
+        type=float,
+        required=True,
+        help="East longitude in degrees +/-180.",
+    )
+    parser.add_argument(
+        "--south",
+        default=-90,
+        type=float,
+        required=True,
+        help="South latitude in degrees +/-90.",
+    )
+    parser.add_argument(
+        "--north",
+        default=90,
+        type=float,
+        required=True,
+        help="North latitude in degrees +/-90.",
+    )
+
+    args = parser.parse_args()
+    _get_map_section(
+        args.west,
+        args.east,
+        args.south,
+        args.north,
+        args.type,
+        args.res,
+        f"{args.location}/{args.name}",
+    )
+    return None
 
 
 if __name__ == "__main__":
