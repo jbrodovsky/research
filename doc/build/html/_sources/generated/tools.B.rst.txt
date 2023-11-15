@@ -1,6 +1,0 @@
-tools.B
-=======
-
-.. currentmodule:: tools
-
-.. autodata:: B

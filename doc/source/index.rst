@@ -11,9 +11,9 @@ This is something new!
 .. autosummary::
     :toctree: generated
     :template: custom-module-template.rst
-   process_dataset
-   setup_conda_envs
    gmt_tool
+   particle_filter
+   process_dataset
    tools
 
 

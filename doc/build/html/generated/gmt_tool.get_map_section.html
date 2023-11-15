@@ -36,10 +36,34 @@
 <h1>gmt_tool.get_map_section<a class="headerlink" href="#gmt-tool-get-map-section" title="Permalink to this heading">¶</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="gmt_tool.get_map_section">
-<span class="sig-prename descclassname"><span class="pre">gmt_tool.</span></span><span class="sig-name descname"><span class="pre">get_map_section</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">west_lon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">east_lon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">south_lat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">north_lat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'relief'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_res</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'02m'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'./'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataArray</span></span></span><a class="headerlink" href="#gmt_tool.get_map_section" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gmt_tool.</span></span><span class="sig-name descname"><span class="pre">get_map_section</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">west_lon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">east_lon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">south_lat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">north_lat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'relief'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_res</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'02m'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'./output.nc'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataArray</span></span></span><a class="headerlink" href="#gmt_tool.get_map_section" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function for querying the raw map to get map segments. This is the publicly facing function
 that should be used in other modules for reading in maps from raw data. If you don’t need to
-use raw data, use a load_map_file().</p>
+query the database and instead need to load a local map file use load_map_file() instead.
+This function will query the remote GMT databases and save a local copy of the map section to
+the location specified by output_location.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>west_lon</strong> (<em>float</em>) – West longitude value in degrees.</p></li>
+<li><p><strong>east_lon</strong> (<em>float</em>) – East longitude value in degrees.</p></li>
+<li><p><strong>south_lat</strong> (<em>float</em>) – South latitude value in degrees.</p></li>
+<li><p><strong>north_lat</strong> (<em>float</em>) – North latitude value in degrees.</p></li>
+<li><p><strong>map_type</strong> (<em>string</em>) – Geophysical map type (relief, gravity, magnetic)</p></li>
+<li><p><strong>map_res</strong> – map resolution of output, all maps have 01d, 30m, 20m, 15m, 10m, 06m, 05m,</p></li>
+</ul>
+</dd>
+</dl>
+<p>04m, 03m, and 02m; additionally gravity and relief have 01m; additionally, relief has 30s,
+15s, 03s, 01s
+:type map_res: string
+:param output_location: filepath and filename to output location.
+:type output_location: string</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xarray.DataArray</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>

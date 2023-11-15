@@ -34,23 +34,30 @@
             
   <section id="module-process_dataset">
 <span id="process-dataset"></span><h1>process_dataset<a class="headerlink" href="#module-process_dataset" title="Permalink to this heading">¶</a></h1>
+<p>Toolbox for processing raw data collected from the SensorLogger app and the MGD77T format.</p>
 <p class="rubric">Functions</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="process_dataset.m77t_to_csv.html#process_dataset.m77t_to_csv" title="process_dataset.m77t_to_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">m77t_to_csv</span></code></a>(data)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="process_dataset.find_periods.html#process_dataset.find_periods" title="process_dataset.find_periods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_periods</span></code></a>(mask)</p></td>
+<td><p>Find the start and stop indecies from a boolean mask.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="process_dataset.m77t_to_csv.html#process_dataset.m77t_to_csv" title="process_dataset.m77t_to_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">m77t_to_csv</span></code></a>(data)</p></td>
 <td><p>Formats a .m77t file in a Pandas data frame to a more useful representation.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="process_dataset.main.html#process_dataset.main" title="process_dataset.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>()</p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="process_dataset.main.html#process_dataset.main" title="process_dataset.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>()</p></td>
+<td><p>Command line interface for processing the raw datasets collected by the Sensor Logger App or NOAA datasets in the mgd77t format.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="process_dataset.process_mgd77_dataset.html#process_dataset.process_mgd77_dataset" title="process_dataset.process_mgd77_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_mgd77_dataset</span></code></a>(folder_path, output_path)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="process_dataset.process_mgd77_dataset.html#process_dataset.process_mgd77_dataset" title="process_dataset.process_mgd77_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_mgd77_dataset</span></code></a>(folder_path, output_path)</p></td>
 <td><p>Recursively search through a given folder to find .m77t files.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="process_dataset.process_sensor_logger_dataset.html#process_dataset.process_sensor_logger_dataset" title="process_dataset.process_sensor_logger_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_sensor_logger_dataset</span></code></a>(folder)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="process_dataset.process_sensor_logger_dataset.html#process_dataset.process_sensor_logger_dataset" title="process_dataset.process_sensor_logger_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_sensor_logger_dataset</span></code></a>(folder)</p></td>
 <td><p>Process the raw .csv files recorded from the SensorLogger app.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="process_dataset.save_sensor_logger_dataset.html#process_dataset.save_sensor_logger_dataset" title="process_dataset.save_sensor_logger_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_sensor_logger_dataset</span></code></a>(imu, ...[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="process_dataset.save_sensor_logger_dataset.html#process_dataset.save_sensor_logger_dataset" title="process_dataset.save_sensor_logger_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_sensor_logger_dataset</span></code></a>(imu, ...[, ...])</p></td>
 <td><p>Saves the processed sensor logger data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="process_dataset.split_dataset.html#process_dataset.split_dataset" title="process_dataset.split_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_dataset</span></code></a>(df, periods)</p></td>
+<td><p>Split a dataframe into subsections based on the given periods.</p></td>
 </tr>
 </tbody>
 </table>

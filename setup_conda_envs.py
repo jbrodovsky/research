@@ -1,16 +1,19 @@
 """
 This Python tool has been deprecated in favor of using the conda environment.yml file setup method. 
-New environments can be created by running `conda env create -f environment.yml` and existing environments.
-I'll be updateing the repo to reflect this change and the shift over to WSL 2.0 by including the .yml files
-that create the environments I use and providing a shell script that replaces this Python script.
+New environments can be created by running `conda env create -f environment.yml` and existing 
+environments updated as well using `conda env update -f environment.yml`. This is the preferred
+method going forward. I'll be updateing the repo to reflect this change and the shift over to 
+WSL 2.0 by including the .yml files that create the environments I use and providing a shell script 
+that replaces this Python script.
 
 
-This is a Python script that will create the required conda environments that I typically use with my research. 
-While I like Anaconda Navigator, it (depending on the configuration of your IT settings) can be buggy, and 
-sometimes it is simply best to do a fresh re-install and re-build the environments from scratch. Given that, in
-such a case, the base version of Conda itself may be out of date, we cannot rely on using the specific Python
-API built into conda and should instead call it via the command line interface (which we will acces from Python
-via the subprocess module). The base conda environment should be seperately and manually maintained.
+This is a Python script that will create the required conda environments that I typically use with 
+my research. While I like Anaconda Navigator, it (depending on the configuration of your IT 
+settings) can be buggy, and sometimes it is simply best to do a fresh re-install and re-build the 
+environments from scratch. Given that, in such a case, the base version of Conda itself may be out 
+of date, we cannot rely on using the specific Python API built into conda and should instead call 
+it via the command line interface (which we will acces from Python via the subprocess module). The 
+base conda environment should be seperately and manually maintained.
 
 The current list of base packages:
 

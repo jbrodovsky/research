@@ -34,12 +34,19 @@
             
   <section id="module-setup_conda_envs">
 <span id="setup-conda-envs"></span><h1>setup_conda_envs<a class="headerlink" href="#module-setup_conda_envs" title="Permalink to this heading">¶</a></h1>
-<p>This is a Python script that will create the required conda environments that I typically use with my research. 
-While I like Anaconda Navigator, it (depending on the configuration of your IT settings) can be buggy, and 
-sometimes it is simply best to do a fresh re-install and re-build the environments from scratch. Given that, in
-such a case, the base version of Conda itself may be out of date, we cannot rely on using the specific Python
-API built into conda and should instead call it via the command line interface (which we will acces from Python
-via the subprocess module). The base conda environment should be seperately and manually maintained.</p>
+<p>This Python tool has been deprecated in favor of using the conda environment.yml file setup method. 
+New environments can be created by running <cite>conda env create -f environment.yml</cite> and existing 
+environments updated as well using <cite>conda env update -f environment.yml</cite>. This is the preferred
+method going forward. I’ll be updateing the repo to reflect this change and the shift over to 
+WSL 2.0 by including the .yml files that create the environments I use and providing a shell script 
+that replaces this Python script.</p>
+<p>This is a Python script that will create the required conda environments that I typically use with 
+my research. While I like Anaconda Navigator, it (depending on the configuration of your IT 
+settings) can be buggy, and sometimes it is simply best to do a fresh re-install and re-build the 
+environments from scratch. Given that, in such a case, the base version of Conda itself may be out 
+of date, we cannot rely on using the specific Python API built into conda and should instead call 
+it via the command line interface (which we will acces from Python via the subprocess module). The 
+base conda environment should be seperately and manually maintained.</p>
 <p>The current list of base packages:</p>
 <ul class="simple">
 <li><p>numpy</p></li>

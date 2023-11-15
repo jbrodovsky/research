@@ -1,4 +1,6 @@
-""" Particle filter algorithim and simulation code"""
+"""
+Particle filter algorithim and simulation code
+"""
 
 from scipy.stats import norm
 from pandas import DataFrame

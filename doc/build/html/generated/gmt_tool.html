@@ -38,14 +38,20 @@
 <p class="rubric">Functions</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="gmt_tool.get_map_section.html#gmt_tool.get_map_section" title="gmt_tool.get_map_section"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_map_section</span></code></a>(west_lon, east_lon, ...[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="gmt_tool.get_map_point.html#gmt_tool.get_map_point" title="gmt_tool.get_map_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_map_point</span></code></a>(geo_map, longitudes, latitudes)</p></td>
+<td><p>Wrapper on DataArray.interp() to query the map and simply get the returned values</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="gmt_tool.get_map_section.html#gmt_tool.get_map_section" title="gmt_tool.get_map_section"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_map_section</span></code></a>(west_lon, east_lon, ...[, ...])</p></td>
 <td><p>Function for querying the raw map to get map segments.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="gmt_tool.inflate_bounds.html#gmt_tool.inflate_bounds" title="gmt_tool.inflate_bounds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inflate_bounds</span></code></a>(min_x, min_y, max_x, max_y, ...)</p></td>
+<td><p>Used to inflate the cropping bounds for the map section</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="gmt_tool.load_map_file.html#gmt_tool.load_map_file" title="gmt_tool.load_map_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_map_file</span></code></a>(filepath)</p></td>
-<td><p>Used to load the local .nc (netCDF) map files in to a Python xarray DataArray structure.</p></td>
+<td><p>Used to load the local .nc (netCDF4) map files in to a Python xarray DataArray structure.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="gmt_tool.main.html#gmt_tool.main" title="gmt_tool.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>()</p></td>
-<td><p></p></td>
+<td><p>Command line tool for accessing GMT maps.</p></td>
 </tr>
 </tbody>
 </table>

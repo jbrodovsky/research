@@ -13,7 +13,9 @@
    .. autosummary::
       :toctree:                             
    
+      get_map_point
       get_map_section
+      inflate_bounds
       load_map_file
       main
    
