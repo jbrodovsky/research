@@ -1,11 +1,13 @@
-import numpy as np
-from gmt_tool import get_map_point
+""" Particle filter algorithim and simulation code"""
+
 from scipy.stats import norm
 from pandas import DataFrame
 from xarray import DataArray
-from pyins import earth
+import numpy as np
 from haversine import haversine, Unit
 from filterpy.monte_carlo import residual_resample
+from gmt_tool import get_map_point
+from pyins.pyins import earth
 
 OVERFLOW = 500
 
@@ -52,7 +54,7 @@ def propagate(
 
 def update_relief(
     particles: np.ndarray,
-    weights: np.ndarray,
+    # weights: np.ndarray,
     geo_map: DataArray,
     observation,
     relief_sigma: float,
@@ -74,26 +76,30 @@ def update_relief(
 
     w[np.isnan(w)] = 1e-16
     if np.any(np.isnan(w)):
-        print(f"NAN elements found")
+        print("NAN elements found")
         w[np.isnana(w)] = 1e-16
 
     w_sum = np.sum(w)
     try:
         new_weights = w / w_sum
-    except Exception as e:
-        # print(e)
-        # print(f"sum: {w_sum}")
+    except ZeroDivisionError:
         return np.ones_like(w) / n
     return new_weights
 
 
 def rmse(particles, truth):
+    """
+    root mean square error calculation
+    """
     diffs = [haversine(truth, (p[0], p[1]), Unit.METERS) for p in particles]
     diffs = np.asarray(diffs)
     return np.sqrt(np.mean(diffs**2))
 
 
 def weighted_rmse(particles, weights, truth):
+    """
+    Weighted root mean square error calculation
+    """
     diffs = [haversine(truth, (p[0], p[1]), Unit.METERS) for p in particles]
     diffs = np.asarray(diffs) * weights
     return np.sqrt(diffs**2)
@@ -108,6 +114,9 @@ def run_particle_filter(
     noise: np.ndarray = np.diag([0.1, 0.01, 0]),
     measurement_sigma: float = 15,
 ):
+    """
+    Run through an instance of the particle filter
+    """
     particles = np.random.multivariate_normal(mu, cov, (N,))
     weights = np.ones((N,)) / N
     error = np.zeros(len(data))
@@ -127,7 +136,7 @@ def run_particle_filter(
             particles = propagate(particles, u, row["dt"].seconds, noise)
             # Update
             obs = row["CORR_DEPTH"]
-            weights = update_relief(particles, weights, geo_map, obs, measurement_sigma)
+            weights = update_relief(particles, geo_map, obs, measurement_sigma)
             # Resample
             inds = residual_resample(weights)
             particles[:] = particles[inds]
