@@ -33,18 +33,18 @@ def propagate(
     # Latitude update
     previous_lat = particles[:, 0]
     lat_rad = np.deg2rad(previous_lat)
-    RN, RE_0, _ = earth.principal_radii(
+    r_n, r_e_0, _ = earth.principal_radii(
         previous_lat, np.zeros_like(previous_lat)
     )  # pricipal_radii expect degrees
     previous_lat = np.deg2rad(previous_lat)
     lat_rad = previous_lat + 0.5 * dt * (
-        particles[:, 3] / (RN - previous_depth) + velocity[:, 0] / (RN - new_depth)
+        particles[:, 3] / (r_n - previous_depth) + velocity[:, 0] / (r_n - new_depth)
     )
     # Longitude update
-    _, RE_1, _ = earth.principal_radii(np.rad2deg(lat_rad), np.zeros_like(lat_rad))
+    _, r_e_1, _ = earth.principal_radii(np.rad2deg(lat_rad), np.zeros_like(lat_rad))
     lon_rad = np.deg2rad(particles[:, 1]) + 0.5 * dt * (
-        particles[:, 4] / ((RE_0 - previous_depth) * np.cos(previous_lat))
-        + velocity[:, 1] / ((RE_1 - new_depth) * np.cos(lat_rad))
+        particles[:, 4] / ((r_e_0 - previous_depth) * np.cos(previous_lat))
+        + velocity[:, 1] / ((r_e_1 - new_depth) * np.cos(lat_rad))
     )
 
     particles = np.array([np.rad2deg(lat_rad), np.rad2deg(lon_rad), new_depth]).T
@@ -108,7 +108,7 @@ def weighted_rmse(particles, weights, truth):
 def run_particle_filter(
     mu: np.ndarray,
     cov: np.ndarray,
-    N: int,
+    n: int,
     data: DataFrame,
     geo_map: DataArray,
     noise: np.ndarray = np.diag([0.1, 0.01, 0]),
@@ -117,8 +117,8 @@ def run_particle_filter(
     """
     Run through an instance of the particle filter
     """
-    particles = np.random.multivariate_normal(mu, cov, (N,))
-    weights = np.ones((N,)) / N
+    particles = np.random.multivariate_normal(mu, cov, (n,))
+    weights = np.ones((n,)) / n
     error = np.zeros(len(data))
     rms_error = np.zeros_like(error)
     # wrmse = np.zeros_like(error)
