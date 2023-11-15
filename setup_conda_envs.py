@@ -1,4 +1,10 @@
 """
+This Python tool has been deprecated in favor of using the conda environment.yml file setup method. 
+New environments can be created by running `conda env create -f environment.yml` and existing environments.
+I'll be updateing the repo to reflect this change and the shift over to WSL 2.0 by including the .yml files
+that create the environments I use and providing a shell script that replaces this Python script.
+
+
 This is a Python script that will create the required conda environments that I typically use with my research. 
 While I like Anaconda Navigator, it (depending on the configuration of your IT settings) can be buggy, and 
 sometimes it is simply best to do a fresh re-install and re-build the environments from scratch. Given that, in
@@ -91,7 +97,8 @@ def create_conda_environment(env_name: str, python_version, packages: str) -> No
         print(f"Creating conda environment: <{env_name}>")
         try:
             subprocess.run(
-                f"conda create -n {env_name} python={python_version} {packages} -y", shell='True'
+                f"conda create -n {env_name} python={python_version} {packages} -y",
+                shell="True",
             )
             print(f"Environment <{env_name}> successfully created.")
         except:

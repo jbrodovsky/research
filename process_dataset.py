@@ -1,9 +1,12 @@
 """
-
+Toolbox for processing raw data collected from the SensorLogger app and the MGD77T format.
 """
 
+import os
+import argparse
+import fnmatch
+import pytz
 import pandas as pd
-import pytz, os, argparse, fnmatch
 
 
 def process_sensor_logger_dataset(folder: str):
@@ -13,10 +16,13 @@ def process_sensor_logger_dataset(folder: str):
 
     Parameters
     ----------
-    :param folder: the filepath to the folder containing the raw data values. This folder should contain TotalAcceleration.csv, Gyroscope.csv, Magnetometer.csv, Barometer.csv, and LocationGps.csv
+    :param folder: the filepath to the folder containing the raw data values. This folder should
+    contain TotalAcceleration.csv, Gyroscope.csv, Magnetometer.csv, Barometer.csv, and
+    LocationGps.csv
     :type folder: string
 
-    :returns: Pandas dataframes corresponding to the processed and cleaned imu, magnetometer, barometer, and GPS data.
+    :returns: Pandas dataframes corresponding to the processed and cleaned imu, magnetometer,
+    barometer, and GPS data.
     """
 
     accel = pd.read_csv(
@@ -132,14 +138,14 @@ def m77t_to_csv(data: pd.DataFrame) -> pd.DataFrame:
     # Reformate date, time, and timezone data from dataframe to propoer Python datetime
     dates = data["DATE"].astype(int)
     times = (data["TIME"].astype(float)).apply(int)
-    TZs = data["TIMEZONE"].astype(int)
-    TZs = TZs.apply(lambda tz: f"+{tz:02}00" if tz >= 0 else f"{tz:02}00")
+    timezones = data["TIMEZONE"].astype(int)
+    timezones = timezones.apply(lambda tz: f"+{tz:02}00" if tz >= 0 else f"{tz:02}00")
     times = times.apply(lambda time_int: f"{time_int // 100:02d}{time_int % 100:02d}")
     datetimes = dates.astype(str) + times.astype(str)
-    TZs.index = datetimes.index
-    datetimes += TZs.astype(str)
-    DateTimes = pd.to_datetime(datetimes, format="%Y%m%d%H%M%z")
-    data.index = DateTimes
+    timezones.index = datetimes.index
+    datetimes += timezones.astype(str)
+    datetimes = pd.to_datetime(datetimes, format="%Y%m%d%H%M%z")
+    data.index = datetimes
     # Clean up the rest of the data frame
     data = data.drop(columns=["DATE", "TIME", "TIMEZONE", "SURVEY_ID"])
     data = data.dropna(axis=1, how="all")
@@ -212,9 +218,49 @@ def process_mgd77_dataset(folder_path: str, output_path: str) -> None:
 
 
 ###################
+def find_periods(mask) -> list:
+    """
+    Find the start and stop indecies from a boolean mask.
+    """
+    # Calculate the starting and ending indices for each period
+    periods = []
+    start_index = None
+
+    for idx, is_true in enumerate(mask):
+        if is_true and start_index is None:
+            start_index = idx
+        elif not is_true and start_index is not None:
+            end_index = idx - 1
+            periods.append((start_index, end_index))
+            start_index = None
+
+    # If the last period extends until the end of the mask, add it
+    if start_index is not None:
+        end_index = len(mask) - 1
+        periods.append((start_index, end_index))
+
+    return periods
+
+
+def split_dataset(df: pd.DataFrame, periods: list) -> list:
+    """
+    Split a dataframe into subsections based on the given periods.
+    """
+    subsections = []
+    for start, end in periods:
+        subsection = df.iloc[start : end + 1]  # Add 1 to include the end index
+        subsections.append(subsection)
+    return subsections
+
+
+###################
 
 
 def main() -> None:
+    """
+    Command line interface for processing the raw datasets collected by the Sensor Logger App or
+    NOAA datasets in the mgd77t format.
+    """
     parser = argparse.ArgumentParser(
         prog="SensorLoggerProcessor",
         description="Post-process the raw datasets collected by the Sensor Logger App",
@@ -230,7 +276,9 @@ def main() -> None:
     parser.add_argument(
         "--location",
         default="./",
-        help="Path to the data. Can either be a direct file path to the .m77t file, a folder containing such file(s), or the folder containing the raw .csvs from the sensor logger. If a folder is given, each subfolder is searched for files.",
+        help="Path to the data. Can either be a direct file path to the .m77t file, "
+        + "a folder containing such file(s), or the folder containing the raw .csvs from "
+        + "the sensor logger. If a folder is given, each subfolder is searched for files.",
         required=True,
     )
     parser.add_argument(
@@ -244,7 +292,8 @@ def main() -> None:
         choices=["csv"],
         default="csv",
         required=False,
-        help="Output format for processed data. Default is .csv; other options to be implemented later .db, .h5",
+        help="Output format for processed data. Default is .csv; other options to be "
+        + "implemented later .db, .h5",
     )
     args = parser.parse_args()
 
@@ -252,9 +301,11 @@ def main() -> None:
         assert os.path.exists(args.location) or os.path.isdir(
             args.location
         ), "Error: invalid location for input data. Please verify file path."
-        IMU, MAG, BAR, GPS = process_sensor_logger_dataset(args.location)
+        imu, magnetic_anomaly, barometer, gps = process_sensor_logger_dataset(
+            args.location
+        )
         output_folder = f"{args.folder}/processed"
-        save_sensor_logger_dataset(output_folder, IMU, MAG, BAR, GPS)
+        save_sensor_logger_dataset(output_folder, imu, magnetic_anomaly, barometer, gps)
     elif args.type == "mgd77":
         if os.path.isdir(args.location):
             if not os.path.isdir(args.output):
@@ -267,7 +318,11 @@ def main() -> None:
             data = m77t_to_csv(data)
             data.to_csv(os.path.join(args.output, filename))
     else:
-        raise "Unrecognized sensor log type."
+        # Raise and appopriate error saying that the map type is not recognized
+        raise NotImplementedError(
+            f"Map type {args.type} not recognized. Please choose from the following: "
+            + "sensorlogger, mgd77"
+        )
 
 
 if __name__ == "__main__":

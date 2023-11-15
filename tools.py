@@ -4,12 +4,13 @@ Utilities toolbox
 
 # --------------------------
 # Angle Wrapper
-# Simple toolbox for wrapping angles. Supports numeric types, lists, and other iterables. Works in both degrees and radians and is solely dependent on base Python.
+# Simple toolbox for wrapping angles. Supports numeric types, lists, and other iterables.
+# Works in both degrees and radians and is solely dependent on base Python.
 
 import math
-import numpy as np
-from pandas import read_csv, to_timedelta, Series
 from datetime import timedelta
+import numpy as np
+from pandas import read_csv, to_timedelta
 from haversine import haversine, Unit
 
 
@@ -66,19 +67,21 @@ def load_trackline_data(filepath: str, filtering_window=30, filtering_period=1):
 
 def haversine_angle(origin: tuple, destination: tuple) -> float:
     """
-    Computes the Haversine calcution between two (latitude, longitude) tuples to find the relative bearing between points.
+    Computes the Haversine calcution between two (latitude, longitude) tuples to find the
+    relative bearing between points.
     https://www.igismap.com/formula-to-find-bearing-or-heading-angle-between-two-points-latitude-longitude/
 
-    Points are assumed to be (latitude, longitude) pairs in e NED degrees. Bearing angle is returned in degrees from North.
+    Points are assumed to be (latitude, longitude) pairs in e NED degrees. Bearing angle
+    is returned in degrees from North.
     """
     destination = np.deg2rad(destination)
     origin = np.deg2rad(origin)
     d_lon = destination[1] - origin[1]
-    X = np.cos(destination[0]) * np.sin(d_lon)
-    Y = np.cos(origin[0]) * np.sin(destination[0]) - np.sin(origin[0]) * np.cos(
+    x = np.cos(destination[0]) * np.sin(d_lon)
+    y = np.cos(origin[0]) * np.sin(destination[0]) - np.sin(origin[0]) * np.cos(
         destination[0]
     ) * np.cos(d_lon)
-    heading = np.rad2deg(np.arctan2(X, Y))
+    heading = np.rad2deg(np.arctan2(x, y))
     return heading
 
 
