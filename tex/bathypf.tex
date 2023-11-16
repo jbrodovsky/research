@@ -1,0 +1,74 @@
+\documentclass[]{article}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+%opening
+\title{A Geophysical Particle Filter}
+\author{
+	James Brodovsky\\
+	%\texttt{jxb880@arl.psu.edu}
+	\and
+	Keith Sevcik\\
+	%\texttt{kws6@arl.psu.edu}
+	\and
+	Armond Conte\\
+	%\texttt{asc46@arl.psu.edu}
+	\and
+	Nick Saluzzi\\
+	%\texttt{nvs100@arl.psu.edu}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+In this paper the authors assess and demonstrate the viability of a particle filter to provide navigation aiding to a traditional error-state inertial navigation system that relies on measurements and map-matching techniques from bathymetry. In this paper the authors demonstrate the suitability of such an algorithm to provide useful position fixes to aid in inertial navigation system recovery from maximum drift in a marine and submarine environment, for long duration, and in deep water. The authors show that the the particle filter is able to achieve and sustain positions fixes that recover from maximum drift and in some instances achive a position fix under the map pixel resolution.
+\end{abstract}
+
+\section{Background}
+\subsection{Navigation in GPS-denied environments}
+Modern inertial measurement units (IMUs) consist of sensors that measure 3-axis rotational rate (angular velocity) and 3-axis specific forces (accelerations), sometimes further aided with a magnetometer or barometer for direct yaw and altitude measurement. Integrating these values over time with an accompanying software package creates an Inertial Navigation System (INS)\cite{groves_ch1}. Due to the errors inherent in IMUs, errors build up over time in the INS's estimate of the true state (navigation solution). To correct these errors, an INS must incorporate some sort of state feedback. Modern INSs typically use the global navigation satellite system (GNSS) to provide this needed state estimate feedback in the form of position and velocity measurements. This feedback is typically incorporated through a Kalman filter based integration method\cite{groves_ch14}. Such systems can be very accurate for sustained periods of time but have critical dependencies, of which, the primary dependency is a reliable signal and connection to the GNSS\@. 
+
+GNSS signals can be intermittent or inaccessible in dense urban areas\cite{}, underground\cite{}, and underwater\cite{}. To combat this, robust GNSS-denied navigation techniques have been developed for navigating indoors\cite{indoor_survey}, underground in caves and mines\cite{papachristos2019mines}, and underwater\cite{underwater_survey}. In this paper we sepcifically examine underwater navigation. Historically, underwater navigation is carried out through dead reckoning and in more modern vessels aided by high-precision inertial navigation systems. Underwater communications are low bandwidth and prevent the use of GPS.\@ While modern systems are able to more accuratly measure accelerations and angular rates and thus accurately navigate for longer durations, they still ultimately require an undersea vehicle to periodically resurface for a GPS-based position fix to calibrate the system and correct for errors. Such a requirement understandably limits the capabilities and missions of underwater platforms.
+
+An alternative method for underwater localization and navigation is terrain-aided navigation (TAN). TAN uses maps of geophysical phenomena and environmental measurements of the same phenomena to localize the platform on corresponding world-wide maps. Historically, this was accomplished through terrain contour matching (TERCOM)\cite{baker1977terrain} and has seen use with the Earth's terrain relief map by measuring an elevation in aircraft applications\cite{boozer1988TAN} or a bathymetric depth in marine applications\cite{williams2001towards_tan}. The TAN method allows for a single scalar measurement to be translated into a two- or three-dimensional position fix (longitude, latitude, and altitude) by way of a map-matching or localization method. This permits the same global scope of GPS and allows for a position fix derived from the geophysical localization to stand in for a traditional GPS position fix.
+
+We have seen similar geophysical based navigation using:
+
+1. Gravity anomaly
+
+2. Magnetic anomaly
+
+3. In high speed aircraft applications
+
+\subsection{The Particle Filter}
+
+The particle filter is a type of non-parametric Bayes filter that represents the platform with numerous discrete possible state estimates and corresponding probabilities. Each pair corresponds to a particle\cite{ProbRob}. Whereas parameterized Bayesian filters typically assume the underlying distribution is normally distributed, the particle filter makes no such assumption. Instead the numerous particles attempt to fully sample the underlying distribution.
+
+The particle filter follows a three step process detailed in Algorithm\ref{alg:pf} for each time step. First, each particle is stepped forward at each time update using a dynamical model of the platform (propagation model). Second, when measurements are received, the measurements are compared to the map and each particle's state to provide an importance weight. Frequently these weights are normalized such that the importance weight becomes a probability that the corresponding particle is the correct solution (measurement model). 
+
+Finally, the particles go through a resampling process. This resampling culls lower probability particles by developing a posterior set that draws with replacement particles from the prior set. By incorporating the particles' probability or importance weight this allows for the shape of distribution to change over time. By doing so it focuses the particles to regions of the state space with a high likelihood of being the true location.
+
+From this posterior particle set can be derived a navigation fix. There are several viable methods (highest weighted particle, mean of the particles' states, a weighted mean, et cetera). In this implementation we use a weighted mean over all particles using the normalized importance weight (probability) of each particle.
+
+\begin{algorithm}
+	\caption{Generic particle filter pseudocode for a single time step}\label{alg:pf}
+	\begin{algorithmic}[1]
+		\State$\textbf{X}_{t-1}=\left[x^i_{t-1}, \ldots, x^N_{t-1}\right]$
+		\For{$n=1$ to $N$}
+			\State{sample $x^n_t \sim p\left(x_t | u_t, x^n_{t-1}\right)$ \qquad{}\enspace{} //propagation model}
+			\State{$w^n_t = p\left(z_t | x^n_t\right)$ \qquad{}\qquad{}\qquad{}\qquad{} // measurement model}
+			\State{append $\left<x^n_t, w^n_t\right>$ to $\bar{\textbf{X}}$}
+		\EndFor{}
+		\For{$n=1$ to $N$} \qquad{}\qquad{}\qquad{}\quad{}\enspace{} // resampling
+			\State{draw $\left<\hat{x}^i_t, \hat{w}^i_t \right>$ from $\bar{\textbf{X}} \propto w^i_t$}
+			\State{append $\left<\hat{x}^i_t, \hat{w}^i_t\right>$ to $\textbf{X}_t$}
+		\EndFor{}
+	\end{algorithmic}
+\end{algorithm}
+
+\bibliography{references.bib}
+\bibliographystyle{plain}
+
+\end{document}
