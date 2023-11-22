@@ -98,7 +98,7 @@ def save_sensor_logger_dataset(
     """
     if output_format == "csv":
         if not os.path.exists(output_folder):
-            os.mkdir(output_folder)
+            os.makedirs(output_folder)
 
         imu.to_csv(f"{output_folder}/imu.csv")
         magnetometer.to_csv(f"{output_folder}/magnetometer.csv")
@@ -150,13 +150,10 @@ def m77t_to_csv(data: pd.DataFrame) -> pd.DataFrame:
     data = data.drop(columns=["DATE", "TIME", "TIMEZONE", "SURVEY_ID"])
     data = data.dropna(axis=1, how="all")
     data = data.dropna(axis=0, how="any")
-
     # Sort the DataFrame by the index
     data = data.sort_index()
-
     # Remove duplicate index values
     data = data.loc[~data.index.duplicated(keep="first")]
-    data["DT"] = data.index.to_series().diff().dt.total_seconds().fillna(0)
 
     return data
 
