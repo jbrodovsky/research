@@ -1,0 +1,57 @@
+\begin{thebibliography}{1}
+
+\bibitem{baker1977terrain}
+W~Baker and R~Clem.
+\newblock Terrain contour matching [tercom] primer.
+\newblock {\em Technical ReportASP-TR-77-61. Aeronautical Systems Division,
+  Wright-Patterson AFB}, 1977.
+
+\bibitem{boozer1988TAN}
+Drayton~D. Boozer and J.~Richard Fellerhoff.
+\newblock Terrain-aided navigation test results in the afti/f-16 aircraft.
+\newblock {\em Navigation, Journal of the Institute of Navigation},
+  35(2):161--176, 1988.
+
+\bibitem{indoor_survey}
+Jiyu Cheng, Hu~Cheng, Max Q.-H. Meng, and Hong Zhang.
+\newblock Autonomous navigation by mobile robots in human environments: A
+  survey.
+\newblock In {\em 2018 IEEE International Conference on Robotics and
+  Biomimetics (ROBIO)}, pages 1981--1986, 2018.
+
+\bibitem{groves_ch1}
+Paul~D. Groves.
+\newblock Chapter 1: Introduction.
+\newblock In {\em Principles of GNSS, Inertial, and Multisensor Integrated
+  Navigation Systems}. Artech House, Boston, MA, 2008.
+
+\bibitem{groves_ch14}
+Paul~D. Groves.
+\newblock Chapter 14: Ins/gnss integration.
+\newblock In {\em Principles of GNSS, Inertial, and Multisensor Integrated
+  Navigation Systems}. Artech House, Boston, MA, 2008.
+
+\bibitem{underwater_survey}
+James~C Kinsey, Ryan~M Eustice, and Louis~L Whitcomb.
+\newblock A survey of underwater vehicle navigation: Recent advances and new
+  challenges.
+\newblock In {\em IFAC conference of manoeuvering and control of marine craft},
+  volume~88, pages 1--12. Lisbon, 2006.
+
+\bibitem{papachristos2019mines}
+Christos Papachristos, Shehryar Khattak, Frank Mascarich, and Kostas Alexis.
+\newblock Autonomous navigation and mapping in underground mines using aerial
+  robots.
+\newblock In {\em 2019 IEEE Aerospace Conference}, pages 1--8, 2019.
+
+\bibitem{ProbRob}
+Sebastian Thrun, Wolfram Burgard, and Dieter Fox.
+\newblock {\em Probabilistic Robotics}, pages 96--113.
+\newblock MIT Press, Cambridge, MA, 2005.
+
+\bibitem{williams2001towards_tan}
+Stefan Williams, Gamini Dissanayake, and Hugh Durrant-Whyte.
+\newblock Towards terrain-aided navigation for underwater robotics.
+\newblock {\em Advanced Robotics}, 15(5):533--549, 2001.
+
+\end{thebibliography}

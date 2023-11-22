@@ -204,17 +204,21 @@ def process_mgd77_dataset(folder_path: str, output_path: str) -> None:
 
     """
     file_paths = _search_folder(folder_path, "*.m77t")
-    print(f"Found the following source files: {file_paths}")
+    print("Found the following source files:")
+    print("\n".join(file_paths))
     for file_path in file_paths:
-        filename = file_path.split("\\")[-1]
-        filename = filename.split(".m77t")[0]
+        filename = os.path.split(file_path)[-1]
+        print(f"Processing: {filename}")
+        name = filename.split(".m77t")[0]
+        print(f"Saving as: {name}.csv")
         data_in = pd.read_csv(
             file_path,
             sep="\t",
             header=0,
         )
         data_out = m77t_to_csv(data=data_in)
-        data_out.to_csv(f"{output_path}/{filename}.csv")
+        # data_out.to_csv(f"{output_path}/{name}.csv")
+        data_out.to_csv(os.path.join(output_path, f"{name}.csv"))
 
 
 ###################
@@ -309,7 +313,7 @@ def main() -> None:
     elif args.type == "mgd77":
         if os.path.isdir(args.location):
             if not os.path.isdir(args.output):
-                os.mkdir(args.output)
+                os.makedirs(args.output, exist_ok=True)
             process_mgd77_dataset(args.location, args.output)
         else:
             filename = args.location.split("\\")[-1]
