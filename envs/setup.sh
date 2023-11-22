@@ -8,7 +8,7 @@ then
 fi
 
 # Create or update conda environments
-for env_file in /home/james/research/envs/*.yml
+for env_file in ./*.yml
 do
     env_name=$(basename "$env_file" .yml)
     if conda env list | grep -q "$env_name"
