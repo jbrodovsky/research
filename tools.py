@@ -2,16 +2,108 @@
 Utilities toolbox
 """
 
-# --------------------------
-# Angle Wrapper
-# Simple toolbox for wrapping angles. Supports numeric types, lists, and other iterables.
-# Works in both degrees and radians and is solely dependent on base Python.
-
 import math
 from datetime import timedelta
 import numpy as np
-from pandas import read_csv, to_timedelta
+from pandas import read_csv, to_timedelta, DataFrame
 from haversine import haversine, Unit
+import os
+
+
+# Read in a CSV file, parse the trackline, and save the parsed tracklines to a new CSV file each
+def parse_tracklines(
+    filepath: str,
+    max_time: timedelta = timedelta(minutes=15),
+    save: bool = False,
+    output_dir: str = None,
+) -> list:
+    """
+    Parse a trackline dataset into periods of continuous data.
+    """
+    data = read_csv(
+        filepath,
+        header=0,
+        index_col=0,
+        parse_dates=True,
+        dtype={
+            "LAT": float,
+            "LON": float,
+            "BAT_TTIME": float,
+            "CORR_DEPTH": float,
+            "MAG_TOT": float,
+            "MAG_RES": float,
+        },
+    )
+    data["DT"] = data.index.to_series().diff()
+    data.loc[data.index[0], "DT"] = timedelta(seconds=0)
+    subsections = parse_trackline(data, max_time=max_time)
+    # get the filename without the extension
+    file_name = os.path.splitext(os.path.basename(filepath))[0]
+
+    if save:
+        if output_dir is not None and not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
+        if output_dir is None:
+            output_dir = ""
+
+        for i, df in enumerate(subsections):
+            df.to_csv(os.path.join(output_dir, f"{file_name}_{i}.csv"))
+
+    return subsections
+
+
+###################
+def parse_trackline(
+    data: DataFrame, max_time: timedelta = timedelta(minutes=15)
+) -> DataFrame:
+    """
+    Parse a trackline dataset into periods of continuous data.
+    """
+    inds = data["DT"] >= max_time
+    data = data.drop(data[inds].index)
+    data["DT"] = data.index.to_series().diff()
+    inds = data["DT"] < timedelta(seconds=0)
+    subsections = find_periods(inds)
+    subsections = split_dataset(data, subsections)
+    return subsections
+
+
+def find_periods(mask) -> list:
+    """
+    Find the start and stop indecies from a boolean mask.
+    """
+    # Calculate the starting and ending indices for each period
+    periods = []
+    start_index = None
+
+    for idx, is_true in enumerate(mask):
+        if is_true and start_index is None:
+            start_index = idx
+        elif not is_true and start_index is not None:
+            end_index = idx - 1
+            periods.append((start_index, end_index))
+            start_index = None
+
+    # If the last period extends until the end of the mask, add it
+    if start_index is not None:
+        end_index = len(mask) - 1
+        periods.append((start_index, end_index))
+
+    return periods
+
+
+def split_dataset(df: DataFrame, periods: list) -> list:
+    """
+    Split a dataframe into subsections based on the given periods.
+    """
+    subsections = []
+    for start, end in periods:
+        subsection = df.iloc[start : end + 1]  # Add 1 to include the end index
+        subsections.append(subsection)
+    return subsections
+
+
+###################
 
 
 def load_trackline_data(filepath: str, filtering_window=30, filtering_period=1):
@@ -205,5 +297,3 @@ def wrap_to_360(angle):
         return [wrap_to_360(a) for a in angle]
     else:
         raise TypeError("Unsupported data type for angle")
-    
-
