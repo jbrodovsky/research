@@ -150,9 +150,13 @@ def m77t_to_csv(data: pd.DataFrame) -> pd.DataFrame:
     data = data.drop(columns=["DATE", "TIME", "TIMEZONE", "SURVEY_ID"])
     data = data.dropna(axis=1, how="all")
     data = data.dropna(axis=0, how="any")
-    # Remove duplicate time indecies
-    duplicate_mask = data.index.duplicated(keep="last")
-    data = data[~duplicate_mask]
+
+    # Sort the DataFrame by the index
+    data = data.sort_index()
+
+    # Remove duplicate index values
+    data = data.loc[~data.index.duplicated(keep="first")]
+    data["DT"] = data.index.to_series().diff().dt.total_seconds().fillna(0)
 
     return data
 
@@ -221,50 +225,7 @@ def process_mgd77_dataset(folder_path: str, output_path: str) -> None:
         data_out.to_csv(os.path.join(output_path, f"{name}.csv"))
 
 
-###################
-def find_periods(mask) -> list:
-    """
-    Find the start and stop indecies from a boolean mask.
-    """
-    # Calculate the starting and ending indices for each period
-    periods = []
-    start_index = None
-
-    for idx, is_true in enumerate(mask):
-        if is_true and start_index is None:
-            start_index = idx
-        elif not is_true and start_index is not None:
-            end_index = idx - 1
-            periods.append((start_index, end_index))
-            start_index = None
-
-    # If the last period extends until the end of the mask, add it
-    if start_index is not None:
-        end_index = len(mask) - 1
-        periods.append((start_index, end_index))
-
-    return periods
-
-
-def split_dataset(df: pd.DataFrame, periods: list) -> list:
-    """
-    Split a dataframe into subsections based on the given periods.
-    """
-    subsections = []
-    for start, end in periods:
-        subsection = df.iloc[start : end + 1]  # Add 1 to include the end index
-        subsections.append(subsection)
-    return subsections
-
-
-###################
-
-
-def main() -> None:
-    """
-    Command line interface for processing the raw datasets collected by the Sensor Logger App or
-    NOAA datasets in the mgd77t format.
-    """
+def parse_args():
     parser = argparse.ArgumentParser(
         prog="SensorLoggerProcessor",
         description="Post-process the raw datasets collected by the Sensor Logger App",
@@ -299,33 +260,56 @@ def main() -> None:
         help="Output format for processed data. Default is .csv; other options to be "
         + "implemented later .db, .h5",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    if args.type == "sensorlogger":
-        assert os.path.exists(args.location) or os.path.isdir(
-            args.location
-        ), "Error: invalid location for input data. Please verify file path."
-        imu, magnetic_anomaly, barometer, gps = process_sensor_logger_dataset(
-            args.location
-        )
-        output_folder = f"{args.folder}/processed"
-        save_sensor_logger_dataset(output_folder, imu, magnetic_anomaly, barometer, gps)
-    elif args.type == "mgd77":
-        if os.path.isdir(args.location):
-            if not os.path.isdir(args.output):
-                os.makedirs(args.output, exist_ok=True)
-            process_mgd77_dataset(args.location, args.output)
-        else:
-            filename = args.location.split("\\")[-1]
-            filename = filename.split(".m77t")[0] + ".csv"
-            data = pd.read_csv(args.location, sep="\t", header=0)
-            data = m77t_to_csv(data)
-            data.to_csv(os.path.join(args.output, filename))
+
+def process_sensorlogger(args):
+    """
+    Process the raw .csv files recorded from the SensorLogger app. This function will correct
+    and rectify the coordinate frame as well as rename the recorded variables.
+    """
+    assert os.path.exists(args.location) or os.path.isdir(
+        args.location
+    ), "Error: invalid location for input data. Please verify file path."
+    imu, magnetic_anomaly, barometer, gps = process_sensor_logger_dataset(args.location)
+    output_folder = os.path.join(args.output, "processed")
+    save_sensor_logger_dataset(output_folder, imu, magnetic_anomaly, barometer, gps)
+
+
+def process_mgd77(args):
+    """
+    Recursively search through a given folder to find .m77t files. When found,
+    read them into memory using Pandas, processes them, and then save as a
+    .csv to the location specified by `output_path`.
+    """
+    if os.path.isdir(args.location):
+        if not os.path.isdir(args.output):
+            os.makedirs(args.output, exist_ok=True)
+        process_mgd77_dataset(args.location, args.output)
     else:
-        # Raise and appopriate error saying that the map type is not recognized
+        filename = args.location.split("\\")[-1]
+        filename = filename.split(".m77t")[0] + ".csv"
+        data = pd.read_csv(args.location, sep="\t", header=0)
+        data = m77t_to_csv(data)
+        data.to_csv(os.path.join(args.output, filename))
+
+
+def main() -> None:
+    """
+    Command line interface for processing the raw datasets collected by the Sensor Logger App or
+    NOAA datasets in the mgd77t format.
+    """
+    args = parse_args()
+
+    process_map = {
+        "sensorlogger": process_sensorlogger,
+        "mgd77": process_mgd77,
+    }
+    if args.type in process_map:
+        process_map[args.type](args)
+    else:
         raise NotImplementedError(
-            f"Map type {args.type} not recognized. Please choose from the following: "
-            + "sensorlogger, mgd77"
+            f"Map type {args.type} not recognized. Please choose from the following: sensorlogger, mgd77"
         )
 
 
