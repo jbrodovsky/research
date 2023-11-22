@@ -123,7 +123,7 @@ def _get_map_section(
     )
     print(cmd)
     out = subprocess.run(
-        f"conda run -n PyGMT {cmd}",
+        f"conda run -n pygmt {cmd}",
         capture_output=True,
         text=True,
         check=True,
