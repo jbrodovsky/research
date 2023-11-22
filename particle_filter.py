@@ -2,8 +2,12 @@
 Particle filter algorithim and simulation code
 """
 from datetime import timedelta
+import os
+import json
+import argparse
 
 from scipy.stats import norm
+from scipy.io import savemat
 from pandas import DataFrame
 from xarray import DataArray
 from haversine import haversine, Unit
@@ -11,8 +15,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from filterpy.monte_carlo import residual_resample
-from gmt_tool import get_map_point
-
+from gmt_tool import get_map_point, get_map_section, inflate_bounds
+from tools import load_trackline_data
 from pyins.pyins import earth
 
 OVERFLOW = 500
@@ -24,6 +28,7 @@ def propagate(
     control: np.ndarray,
     dt: float = 1.0,
     noise=np.diag([0, 0, 0]),
+    noise_calibration_mode=False,
 ) -> np.ndarray:
     """
     Process model according to Groves. State vector is in NED:
@@ -32,7 +37,12 @@ def propagate(
     """
     n, _ = particles.shape
     # Velocity update
-    velocity = np.random.multivariate_normal(control, noise, (n,))
+    if not noise_calibration_mode:
+        velocity = np.random.multivariate_normal(control, noise, (n,))
+    else:
+        velocity = control + np.abs(
+            np.random.multivariate_normal(np.zeros(3), noise, (n,))
+        )
 
     # Depth update
     previous_depth = particles[:, 2]
@@ -86,7 +96,7 @@ def update_relief(
         print("NAN elements found")
         w[np.isnana(w)] = 1e-16
 
-    w_sum = np.sum(w)
+    w_sum = np.nansum(w)
     try:
         new_weights = w / w_sum
     except ZeroDivisionError:
@@ -110,19 +120,16 @@ def run_particle_filter(
     weights = np.ones((n,)) / n
     error = np.zeros(len(data))
     rms_error = np.zeros_like(error)
-    # wrmse = np.zeros_like(error)
     # Initial values
     estimate = [weights @ particles]
-    error[0] = haversine(estimate[0][:2], (data.LAT[0], data.LON[0]), Unit.METERS)
-    rms_error[0] = rmse(particles, (data["LAT"][0], data["LAT"][0]))
-    # wrmse[0] = weighted_rmse(particles, weights, (data["LAT"][0], data["LAT"][0]))
+    rms_error[0] = rmse(particles, (data.iloc[0].LAT, data.iloc[0].LON))
 
     for i, item in enumerate(data.iterrows()):
         if i > 0:
             row = item[1]
             # Propagate
             u = np.asarray([row["vN"], row["vE"], 0])
-            particles = propagate(particles, u, row["dt"].seconds, noise)
+            particles = propagate(particles, u, row["DT"].seconds, noise)
             # Update
             obs = row["CORR_DEPTH"]
             weights = update_relief(particles, geo_map, obs, measurement_sigma)
@@ -131,13 +138,69 @@ def run_particle_filter(
             particles[:] = particles[inds]
             # Calculate estimate and error
             estimate.append(weights @ particles)
-            error[i] = haversine(
-                estimate[i][:2], (data.LAT[i], data.LON[i]), Unit.METERS
-            )
             rms_error[i] = rmse(particles, (row.LAT, row.LON))
-            # wrmse[i] = weighted_rmse(particles, weights, (row.LAT, row.LON))
     estimate = np.asarray(estimate)
-    return estimate, error, rms_error  # , wrmse
+    return estimate, rms_error
+
+
+# Simulation functions
+def process_particle_filter(
+    path_to_data: str,
+    configurations: dict,
+    output_dir: str,
+    map_type: str = "relief",
+    map_resolution: str = "15s",
+):
+    """
+    Process the particle filter for a given set of configurations
+    """
+    # Load data
+    data = load_trackline_data(path_to_data)
+    # Process filepath for name
+    path, file = os.path.split(path_to_data)
+    name, ext = os.path.splitext(file)
+    # Load map
+    min_lon = data.LON.min()
+    max_lon = data.LON.max()
+    min_lat = data.LAT.min()
+    max_lat = data.LAT.max()
+    min_lon, min_lat, max_lon, max_lat = inflate_bounds(
+        min_lon, min_lat, max_lon, max_lat, 0.25
+    )
+    geo_map = get_map_section(
+        min_lon, max_lon, min_lat, max_lat, map_type, map_resolution, name
+    )
+    # Load initial conditions
+    mu = np.asarray([data.iloc[0].LAT, data.iloc[0].LON, 0, 0, 0, 0])
+    cov = np.asarray(configurations["cov"])
+    cov = np.diag(cov)
+    noise = np.asarray(configurations["velocity_noise"])
+    noise = np.diag(noise)
+    if map_type == "relief":
+        measurement_sigma = configurations["bathy_std"]
+    elif map_type == "gravity":
+        measurement_sigma = configurations["gravity_std"]
+    elif map_type == "magnetic":
+        measurement_sigma = configurations["magnetic_std"]
+    else:
+        raise ValueError("Map type not recognized")
+
+    n = configurations["n"]
+    # Run particle filter
+    estimate, rms_error = run_particle_filter(
+        mu, cov, n, data, geo_map, noise, measurement_sigma
+    )
+    # Validate output path
+    if not os.path.exists(os.path.join(output_dir, name, map_type)):
+        os.makedirs(os.path.join(output_dir, name, map_type))
+    # Plot results
+    fig, ax = plot_map_and_trajectory(geo_map, data)
+    fig.savefig(os.path.join(output_dir, name, map_type, "map_and_trajectory.png"))
+    fig, ax = plot_estimate(geo_map, data, estimate)
+    fig.savefig(os.path.join(output_dir, name, map_type, "estimate.png"))
+    fig, ax = plot_error(data, rms_error)
+    fig.savefig(os.path.join(output_dir, name, map_type, "error.png"))
+    plt.close("all")
 
 
 # Error functions
@@ -206,18 +269,13 @@ def plot_map_and_trajectory(
     fig, ax = plt.subplots(1, 1, figsize=(16, 8))
     ax.contourf(geo_map.lon, geo_map.lat, geo_map.data)
     ax.plot(data.LON, data.LAT, ".r", label="Truth")
-    ax.plot(data.LON[0], data.LAT[0], "xk", label="Start")
-    ax.plot(data.LON[-1], data.LAT[-1], "bo", label="Stop")
-    ax.set(
-        xlim=[min_lon, max_lon],
-        ylim=[min_lat, max_lat],
-        xlabel=xlabel_str,
-        xlabel_size=xlabel_size,
-        ylabel=ylabel_str,
-        ylabel_size=ylabel_size,
-        title=title_str,
-        title_size=title_size,
-    )
+    ax.plot(data.iloc[0].LON, data.iloc[0].LAT, "xk", label="Start")
+    ax.plot(data.iloc[-1].LON, data.iloc[-1].LAT, "bo", label="Stop")
+    ax.set_xlim([min_lon, max_lon])
+    ax.set_ylim([min_lat, max_lat])
+    ax.set_xlabel(xlabel_str, fontsize=xlabel_size)
+    ax.set_ylabel(ylabel_str, fontsize=ylabel_size)
+    ax.set_title(title_str, fontsize=title_size)
     ax.axis("image")
     ax.legend()
     return fig, ax
@@ -260,18 +318,15 @@ def plot_estimate(
     fig, ax = plt.subplots(1, 1, figsize=(16, 8))
     ax.contourf(geo_map.lon, geo_map.lat, geo_map.data)
     ax.plot(data.LON, data.LAT, ".r", label="Truth")
-    ax.plot(data.LON[0], data.LAT[0], "xk", label="Start")
-    ax.plot(data.LON[-1], data.LAT[-1], "bo", label="Stop")
-    ax.set(
-        xlim=[min_lon, max_lon],
-        ylim=[min_lat, max_lat],
-        xlabel=xlabel_str,
-        xlabel_size=xlabel_size,
-        ylabel=ylabel_str,
-        ylabel_size=ylabel_size,
-        title=title_str,
-        title_size=title_size,
-    )
+    ax.plot(data.iloc[0].LON, data.iloc[0].LAT, "xk", label="Start")
+    ax.plot(data.iloc[-1].LON, data.iloc[-1].LAT, "bo", label="Stop")
+
+    ax.set_xlim([min_lon, max_lon])
+    ax.set_ylim([min_lat, max_lat])
+    ax.set_xlabel(xlabel_str, fontsize=xlabel_size)
+    ax.set_ylabel(ylabel_str, fontsize=ylabel_size)
+    ax.set_title(title_str, fontsize=title_size)
+
     ax.plot(estimate[:, 1], estimate[:, 0], "g.", label="PF Estimate")
     ax.axis("image")
     ax.legend()
@@ -325,22 +380,76 @@ def plot_error(
     """
     # res = haversine((0, 0), (geo_map.lat[1] - geo_map.lat[0], 0), Unit.METERS)
     fig, ax = plt.subplots(1, 1, figsize=(16, 8))
-    ax.plot(
-        data["TIME"] / timedelta(hours=1),
-        np.ones_like(data["TIME"]) * res,
-        label="Pixel Resolution",
-    )
-    ax.plot(data["TIME"] / timedelta(hours=1), rms_error, label="RMSE")
+    time = data.index - data.index[0]
+    if res is not None:
+        ax.plot(
+            time / timedelta(hours=1),
+            np.ones_like(time) * res,
+            label="Pixel Resolution",
+        )
+    ax.plot(time / timedelta(hours=1), rms_error, label="RMSE")
     # ax.plot(data['TIME'] / timedelta(hours=1), weighted_rmse, label='Weighted RMSE')
-    ax.set(
-        ylim=[0, max_error],
-        xlabel=xlabel_str,
-        xlabel_size=xlabel_size,
-        ylabel=ylabel_str,
-        ylabel_size=ylabel_size,
-        title=title_str,
-        title_size=title_size,
-    )
-    ax.set_ylim([0, 5000])
+    ax.set_xlabel(xlabel_str, fontsize=xlabel_size)
+    ax.set_ylabel(ylabel_str, fontsize=ylabel_size)
+    ax.set_title(title_str, fontsize=title_size)
+    ax.set_ylim([0, max_error])
     ax.legend()
     return fig, ax
+
+
+def parse_args():
+    """
+    Command line interface specifications
+    """
+    parser = argparse.ArgumentParser(description="Particle Filter")
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=str,
+        help="Path to the particle filter configuration file",
+        default="./config.json",
+    )
+    parser.add_argument(
+        "-d",
+        "--data",
+        type=str,
+        help="Path to the data file or folder containing data files",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        help="Path to the output directory",
+        default="./results/",
+    )
+    parser.add_argument(
+        "-t",
+        "--type",
+        type=str,
+        help="Type of map to use",
+        default="relief",
+    )
+    return parser.parse_args()
+
+
+def main():
+    """
+    Main function
+    """
+    args = parse_args()
+    config = json.load(open(args.config, "r"))
+    # Check to see if teh data is a file or a folder
+    if os.path.isfile(args.data):
+        process_particle_filter(args.data, config, "./results/", args.type)
+    elif os.path.isdir(args.data):
+        for file in os.listdir(args.data):
+            if file.endswith(".csv"):
+                process_particle_filter(
+                    os.path.join(args.data, file), config, "./results/", args.type
+                )
+    else:
+        raise ValueError("Data path not recognized")
+
+
+if __name__ == "__main__":
+    main()

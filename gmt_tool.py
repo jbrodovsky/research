@@ -3,6 +3,8 @@ Python module to access and save geophysical maps using GMT.
 """
 
 import subprocess
+import os
+
 from argparse import ArgumentParser
 import xarray as xr
 from numpy import ndarray
@@ -18,6 +20,7 @@ def get_map_section(
     map_type: str = "relief",
     map_res: str = "02m",
     output_location: str = "./output.nc",
+    save: bool = False,
 ) -> xr.DataArray:
     """
     Function for querying the raw map to get map segments. This is the publicly facing function
@@ -54,6 +57,8 @@ def get_map_section(
         west_lon, east_lon, south_lat, north_lat, map_type, map_res, output_location
     )
     out = load_map_file(f"{output_location}.nc")
+    if not save:
+        os.remove(f"{output_location}.nc")
     return out
 
 
@@ -118,7 +123,7 @@ def _get_map_section(
         map_name += "_p"
 
     cmd = (
-        f"gmt grdcut @{map_name} -Rd{west_lon}/{east_lon}/{south_lat}/{north_lat}"
+        f"gmt grdcut @{map_name} -Rd{west_lon}/{east_lon}/{south_lat}/{north_lat} "
         f"-G{output_location}.nc"
     )
     print(cmd)
