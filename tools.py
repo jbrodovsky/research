@@ -5,112 +5,11 @@ Utilities toolbox
 import math
 from datetime import timedelta
 import numpy as np
-from pandas import read_csv, to_timedelta, DataFrame
+from pandas import read_csv, to_timedelta
 from haversine import haversine, Unit
-import os
 
 
-# Read in a CSV file, parse the trackline, and save the parsed tracklines to a new CSV file each
-def parse_trackline(
-    filepath: str,
-    max_time: timedelta = timedelta(minutes=10),
-    max_delta_t: timedelta = timedelta(minutes=2),
-    min_duration: timedelta = timedelta(minutes=60),
-    save: bool = False,
-    output_dir: str = None,
-) -> list:
-    """
-    Parse a trackline dataset into periods of continuous data.
-    """
-    data = read_csv(
-        filepath,
-        header=0,
-        index_col=0,
-        parse_dates=True,
-        dtype={
-            "LAT": float,
-            "LON": float,
-            "BAT_TTIME": float,
-            "CORR_DEPTH": float,
-            "MAG_TOT": float,
-            "MAG_RES": float,
-        },
-    )
-    # get the filename without the extension
-    file_name = os.path.splitext(os.path.basename(filepath))[0]
-    # Split the dataset into periods of continuous data
-    data["DT"] = data.index.to_series().diff()
-    data.loc[data.index[0], "DT"] = timedelta(seconds=0)
-    inds = (data["DT"] > max_time).to_list()
-    subsets = find_periods(inds)
-    subsections = split_dataset(data, subsets)
-    # Validate the subsections
-    validated_subsections = []
-    for i, df in enumerate(subsections):
-        # Check that the time between each data point is less than the max delta t
-        if not (df["DT"] < max_delta_t).mean():
-            # print(f"Subsection {i} of {file_name} failed validation")
-            continue
-        # Check that the subsection meets the minimum duration
-        if len(df) < 3 or df.index[-1] - df.index[0] < min_duration:
-            # print(f"Subsection {i} of {file_name} failed validation")
-            continue
-        # Check that the subsection has at least 2 unique timestamps
-        if len(df.index.unique()) < 2:
-            # print(f"Subsection {i} of {file_name} failed validation")
-            continue
-        validated_subsections.append(df)
-    # Save off the subsections to CSV files
-    if save:
-        if output_dir is not None and not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
-        if output_dir is None:
-            output_dir = ""
-
-        for i, df in enumerate(validated_subsections):
-            df.to_csv(os.path.join(output_dir, f"{file_name}_{i}.csv"))
-
-    return subsections
-
-
-def find_periods(mask) -> list:
-    """
-    Find the start and stop indecies from a boolean mask.
-    """
-    # Calculate the starting and ending indices for each period
-    periods = []
-    start_index = None
-
-    for idx, is_true in enumerate(mask):
-        if not is_true and start_index is None:
-            start_index = idx
-        elif is_true and start_index is not None:
-            end_index = idx - 1
-            periods.append((start_index, end_index))
-            start_index = None
-
-    # If the last period extends until the end of the mask, add it
-    if start_index is not None:
-        end_index = len(mask) - 1
-        periods.append((start_index, end_index))
-
-    return periods
-
-
-def split_dataset(df: DataFrame, periods: list) -> list:
-    """
-    Split a dataframe into subsections based on the given periods.
-    """
-    subsections = []
-    for start, end in periods:
-        subsection = df.iloc[start : end + 1]  # Add 1 to include the end index
-        subsections.append(subsection)
-    return subsections
-
-
-###################
-
-
+# Load trackline data file
 def load_trackline_data(filepath: str, filtering_window=30, filtering_period=1):
     """
     Loads and formats a post-processed NOAA trackline dataset
@@ -127,13 +26,10 @@ def load_trackline_data(filepath: str, filtering_window=30, filtering_period=1):
             "CORR_DEPTH": float,
             "MAG_TOT": float,
             "MAG_RES": float,
-            "TIME": str,
+            "DT": str,
         },
     )
-    data["TIME"] = to_timedelta(data["TIME"])
-    data["dt"] = data["TIME"].diff()
-    data["dt"].iloc[0] = timedelta(seconds=0)
-    data = data.drop(index=data.index[data.dt < timedelta(seconds=0)])
+    data["DT"] = to_timedelta(data["DT"])
 
     dist = np.zeros_like(data.LON)
     head = np.zeros_like(data.LON)
@@ -151,7 +47,7 @@ def load_trackline_data(filepath: str, filtering_window=30, filtering_period=1):
 
     data["distance"] = dist
     data["heading"] = head
-    data["vel"] = data["distance"] / (data["dt"] / timedelta(seconds=1))
+    data["vel"] = data["distance"] / (data["DT"] / timedelta(seconds=1))
     data["vel_filt"] = (
         data["vel"]
         .rolling(window=filtering_window, min_periods=filtering_period)
