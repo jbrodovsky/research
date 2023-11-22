@@ -8,7 +8,10 @@ import fnmatch
 import pytz
 import pandas as pd
 
+from datetime import timedelta
 
+
+# Sensor Logger Processing
 def process_sensor_logger_dataset(folder: str):
     """
     Process the raw .csv files recorded from the SensorLogger app. This function will correct
@@ -118,9 +121,20 @@ def _convert_datetime(
     return df
 
 
-###################
+def process_sensorlogger(args):
+    """
+    Process the raw .csv files recorded from the SensorLogger app. This function will correct
+    and rectify the coordinate frame as well as rename the recorded variables.
+    """
+    assert os.path.exists(args.location) or os.path.isdir(
+        args.location
+    ), "Error: invalid location for input data. Please verify file path."
+    imu, magnetic_anomaly, barometer, gps = process_sensor_logger_dataset(args.location)
+    output_folder = os.path.join(args.output, "processed")
+    save_sensor_logger_dataset(output_folder, imu, magnetic_anomaly, barometer, gps)
 
 
+# MGD77T Processing
 def m77t_to_csv(data: pd.DataFrame) -> pd.DataFrame:
     """
     Formats a .m77t file in a Pandas data frame to a more useful representation. Data is read in
@@ -153,7 +167,7 @@ def m77t_to_csv(data: pd.DataFrame) -> pd.DataFrame:
     # Sort the DataFrame by the index
     data = data.sort_index()
     # Remove duplicate index values
-    data = data.loc[~data.index.duplicated(keep="first")]
+    data = data.loc[~data.index.duplicated(keep="last")]
 
     return data
 
@@ -181,8 +195,6 @@ def _search_folder(folder_path: str, extension: str) -> list:
         for filename in fnmatch.filter(files, extension):
             print(f"Adding: {os.path.join(root, filename)}")
             new_file_paths.append(os.path.join(root, filename))
-        # for subfolder in subfolders:
-        #    new_file_paths.append(search_folder(subfolder, extension))
     return new_file_paths
 
 
@@ -218,23 +230,165 @@ def process_mgd77_dataset(folder_path: str, output_path: str) -> None:
             header=0,
         )
         data_out = m77t_to_csv(data=data_in)
-        # data_out.to_csv(f"{output_path}/{name}.csv")
         data_out.to_csv(os.path.join(output_path, f"{name}.csv"))
 
 
+def process_mgd77(args):
+    """
+    Recursively search through a given folder to find .m77t files. When found,
+    read them into memory using Pandas, processes them, and then save as a
+    .csv to the location specified by `output_path`.
+    """
+    if os.path.isdir(args.location):
+        if not os.path.isdir(args.output):
+            os.makedirs(args.output, exist_ok=True)
+        process_mgd77_dataset(args.location, args.output)
+    else:
+        filename = args.location.split("\\")[-1]
+        filename = filename.split(".m77t")[0] + ".csv"
+        data = pd.read_csv(args.location, sep="\t", header=0)
+        data = m77t_to_csv(data)
+        data.to_csv(os.path.join(args.output, filename))
+
+
+# MGD77T parsing
+def parse_dataset(args):
+    """
+    Recursively search through a given folder to find .csv files. When found,
+    read them into memory using parse_trackline, processes them, and then save as a
+    .csv to the location specified by `output_path`.
+    """
+    file_paths = _search_folder(args.location, "*.csv")
+    print("Found the following source files:")
+    print("\n".join(file_paths))
+    for file_path in file_paths:
+        filename = os.path.split(file_path)[-1]
+        print(f"Processing: {filename}")
+        parse_trackline(
+            file_path,
+            save=True,
+            output_dir=args.output,
+            max_time=timedelta(minutes=args.max_time),
+            max_delta_t=timedelta(minutes=args.max_delta_t),
+            min_duration=timedelta(minutes=args.min_duration),
+        )
+        # data_out.to_csv(f"{output_path}/{name}.csv")
+        # data_out.to_csv(os.path.join(args.output, f"{name}.csv"))
+
+
+def parse_trackline(
+    filepath: str,
+    max_time: timedelta = timedelta(minutes=10),
+    max_delta_t: timedelta = timedelta(minutes=2),
+    min_duration: timedelta = timedelta(minutes=60),
+    save: bool = False,
+    output_dir: str = None,
+) -> list:
+    """
+    Parse a trackline dataset into periods of continuous data.
+    """
+    data = pd.read_csv(
+        filepath,
+        header=0,
+        index_col=0,
+        parse_dates=True,
+        dtype={
+            "LAT": float,
+            "LON": float,
+            "BAT_TTIME": float,
+            "CORR_DEPTH": float,
+            "MAG_TOT": float,
+            "MAG_RES": float,
+        },
+    )
+    # get the filename without the extension
+    file_name = os.path.splitext(os.path.basename(filepath))[0]
+    # Split the dataset into periods of continuous data
+    data["DT"] = data.index.to_series().diff()
+    data.loc[data.index[0], "DT"] = timedelta(seconds=0)
+    inds = (data["DT"] > max_time).to_list()
+    subsets = find_periods(inds)
+    subsections = split_dataset(data, subsets)
+    # Validate the subsections
+    validated_subsections = []
+    for i, df in enumerate(subsections):
+        # Check that the time between each data point is less than the max delta t
+        if not (df["DT"] < max_delta_t).mean():
+            # print(f"Subsection {i} of {file_name} failed validation")
+            continue
+        # Check that the subsection meets the minimum duration
+        if len(df) < 3 or df.index[-1] - df.index[0] < min_duration:
+            # print(f"Subsection {i} of {file_name} failed validation")
+            continue
+        # Check that the subsection has at least 2 unique timestamps
+        if len(df.index.unique()) < 2:
+            # print(f"Subsection {i} of {file_name} failed validation")
+            continue
+        validated_subsections.append(df)
+    # Save off the subsections to CSV files
+    if save:
+        if output_dir is not None and not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
+        if output_dir is None:
+            output_dir = ""
+
+        for i, df in enumerate(validated_subsections):
+            df.to_csv(os.path.join(output_dir, f"{file_name}_{i}.csv"))
+
+    return subsections
+
+
+def find_periods(mask) -> list:
+    """
+    Find the start and stop indecies from a boolean mask.
+    """
+    # Calculate the starting and ending indices for each period
+    periods = []
+    start_index = None
+
+    for idx, is_true in enumerate(mask):
+        if not is_true and start_index is None:
+            start_index = idx
+        elif is_true and start_index is not None:
+            end_index = idx - 1
+            periods.append((start_index, end_index))
+            start_index = None
+
+    # If the last period extends until the end of the mask, add it
+    if start_index is not None:
+        end_index = len(mask) - 1
+        periods.append((start_index, end_index))
+
+    return periods
+
+
+def split_dataset(df: pd.DataFrame, periods: list) -> list:
+    """
+    Split a dataframe into subsections based on the given periods.
+    """
+    subsections = []
+    for start, end in periods:
+        subsection = df.iloc[start : end + 1]  # Add 1 to include the end index
+        subsections.append(subsection)
+    return subsections
+
+
+# Command Line Interface
 def parse_args():
+    """
+    Command line interface argument parser.
+    """
     parser = argparse.ArgumentParser(
         prog="SensorLoggerProcessor",
         description="Post-process the raw datasets collected by the Sensor Logger App",
     )
 
     parser.add_argument(
-        "--type",
-        choices=["sensorlogger", "mgd77"],
+        "--mode",
+        choices=["sensorlogger", "mgd77", "parser"],
         required=True,
-        help="Type of sensor recording to process.",
+        help="Type of sensor recording to process. Parser is used to parse NOAA datasets in the mgd77t format into continuous datasets.",
     )
-
     parser.add_argument(
         "--location",
         default="./",
@@ -257,38 +411,31 @@ def parse_args():
         help="Output format for processed data. Default is .csv; other options to be "
         + "implemented later .db, .h5",
     )
+    parser.add_argument(
+        "--max_time",
+        type=float,
+        default=10,
+        required=False,
+        help="Maximum time between data points to be considered a continuous dataset. "
+        + "Default is 10 minutes. Input units are minutes.",
+    )
+    parser.add_argument(
+        "--max_delta_t",
+        type=float,
+        default=2,
+        required=False,
+        help="Maximum time between data points to be considered a continuous dataset. "
+        + "Default is 2 minutes. Input units are minutes.",
+    )
+    parser.add_argument(
+        "--min_duration",
+        type=float,
+        default=60,
+        required=False,
+        help="Minimum duration of a continuous dataset. Default is 60 minutes. Input "
+        + "units are minutes.",
+    )
     return parser.parse_args()
-
-
-def process_sensorlogger(args):
-    """
-    Process the raw .csv files recorded from the SensorLogger app. This function will correct
-    and rectify the coordinate frame as well as rename the recorded variables.
-    """
-    assert os.path.exists(args.location) or os.path.isdir(
-        args.location
-    ), "Error: invalid location for input data. Please verify file path."
-    imu, magnetic_anomaly, barometer, gps = process_sensor_logger_dataset(args.location)
-    output_folder = os.path.join(args.output, "processed")
-    save_sensor_logger_dataset(output_folder, imu, magnetic_anomaly, barometer, gps)
-
-
-def process_mgd77(args):
-    """
-    Recursively search through a given folder to find .m77t files. When found,
-    read them into memory using Pandas, processes them, and then save as a
-    .csv to the location specified by `output_path`.
-    """
-    if os.path.isdir(args.location):
-        if not os.path.isdir(args.output):
-            os.makedirs(args.output, exist_ok=True)
-        process_mgd77_dataset(args.location, args.output)
-    else:
-        filename = args.location.split("\\")[-1]
-        filename = filename.split(".m77t")[0] + ".csv"
-        data = pd.read_csv(args.location, sep="\t", header=0)
-        data = m77t_to_csv(data)
-        data.to_csv(os.path.join(args.output, filename))
 
 
 def main() -> None:
@@ -301,12 +448,13 @@ def main() -> None:
     process_map = {
         "sensorlogger": process_sensorlogger,
         "mgd77": process_mgd77,
+        "parser": parse_dataset,
     }
-    if args.type in process_map:
-        process_map[args.type](args)
+    if args.mode in process_map:
+        process_map[args.mode](args)
     else:
         raise NotImplementedError(
-            f"Map type {args.type} not recognized. Please choose from the following: sensorlogger, mgd77"
+            f"Parser mode type {args.mode} not recognized. Please choose from the following: sensorlogger, mgd77, parser"
         )
 
 

@@ -11,9 +11,11 @@ import os
 
 
 # Read in a CSV file, parse the trackline, and save the parsed tracklines to a new CSV file each
-def parse_tracklines(
+def parse_trackline(
     filepath: str,
-    max_time: timedelta = timedelta(minutes=15),
+    max_time: timedelta = timedelta(minutes=10),
+    max_delta_t: timedelta = timedelta(minutes=2),
+    min_duration: timedelta = timedelta(minutes=60),
     save: bool = False,
     output_dir: str = None,
 ) -> list:
@@ -34,37 +36,40 @@ def parse_tracklines(
             "MAG_RES": float,
         },
     )
-    data["DT"] = data.index.to_series().diff()
-    data.loc[data.index[0], "DT"] = timedelta(seconds=0)
-    subsections = parse_trackline(data, max_time=max_time)
     # get the filename without the extension
     file_name = os.path.splitext(os.path.basename(filepath))[0]
-
+    # Split the dataset into periods of continuous data
+    data["DT"] = data.index.to_series().diff()
+    data.loc[data.index[0], "DT"] = timedelta(seconds=0)
+    inds = (data["DT"] > max_time).to_list()
+    subsets = find_periods(inds)
+    subsections = split_dataset(data, subsets)
+    # Validate the subsections
+    validated_subsections = []
+    for i, df in enumerate(subsections):
+        # Check that the time between each data point is less than the max delta t
+        if not (df["DT"] < max_delta_t).mean():
+            # print(f"Subsection {i} of {file_name} failed validation")
+            continue
+        # Check that the subsection meets the minimum duration
+        if len(df) < 3 or df.index[-1] - df.index[0] < min_duration:
+            # print(f"Subsection {i} of {file_name} failed validation")
+            continue
+        # Check that the subsection has at least 2 unique timestamps
+        if len(df.index.unique()) < 2:
+            # print(f"Subsection {i} of {file_name} failed validation")
+            continue
+        validated_subsections.append(df)
+    # Save off the subsections to CSV files
     if save:
         if output_dir is not None and not os.path.isdir(output_dir):
             os.makedirs(output_dir)
         if output_dir is None:
             output_dir = ""
 
-        for i, df in enumerate(subsections):
+        for i, df in enumerate(validated_subsections):
             df.to_csv(os.path.join(output_dir, f"{file_name}_{i}.csv"))
 
-    return subsections
-
-
-###################
-def parse_trackline(
-    data: DataFrame, max_time: timedelta = timedelta(minutes=15)
-) -> DataFrame:
-    """
-    Parse a trackline dataset into periods of continuous data.
-    """
-    inds = data["DT"] >= max_time
-    data = data.drop(data[inds].index)
-    data["DT"] = data.index.to_series().diff()
-    inds = data["DT"] < timedelta(seconds=0)
-    subsections = find_periods(inds)
-    subsections = split_dataset(data, subsections)
     return subsections
 
 
@@ -77,9 +82,9 @@ def find_periods(mask) -> list:
     start_index = None
 
     for idx, is_true in enumerate(mask):
-        if is_true and start_index is None:
+        if not is_true and start_index is None:
             start_index = idx
-        elif not is_true and start_index is not None:
+        elif is_true and start_index is not None:
             end_index = idx - 1
             periods.append((start_index, end_index))
             start_index = None
