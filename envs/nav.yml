@@ -25,3 +25,5 @@ dependencies:
   - netCDF4
   # PyINS
   - cython
+  # Time series processing
+  - pytz
