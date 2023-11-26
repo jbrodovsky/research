@@ -5,6 +5,7 @@ from datetime import timedelta
 import os
 import json
 import argparse
+import multiprocessing
 
 from scipy.stats import norm
 from scipy.io import savemat
@@ -437,16 +438,26 @@ def main():
     Main function
     """
     args = parse_args()
-    config = json.load(open(args.config, "r"))
-    # Check to see if teh data is a file or a folder
+    config = json.load(open(args.config, "r", encoding="utf-8"))
+    # Check to see if the data is a file or a folder
     if os.path.isfile(args.data):
         process_particle_filter(args.data, config, "./results/", args.type)
     elif os.path.isdir(args.data):
-        for file in os.listdir(args.data):
-            if file.endswith(".csv"):
-                process_particle_filter(
-                    os.path.join(args.data, file), config, "./results/", args.type
-                )
+        # Get a list of all CSV files in the directory
+        file_list = [
+            os.path.join(args.data, file)
+            for file in os.listdir(args.data)
+            if file.endswith(".csv")
+        ]
+        cores = multiprocessing.cpu_count()
+        # Process particle filters in parallel
+        with multiprocessing.Pool(processes=cores) as pool:
+            pool.starmap(
+                process_particle_filter,
+                [(file, config, "./results/", args.type) for file in file_list],
+            )
+            pool.close()
+            pool.join()
     else:
         raise ValueError("Data path not recognized")
 
