@@ -11,12 +11,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
-        #with:
-        #  activate-environment: anaconda-client-env
-        #  environment-file: etc/example-environment-caching.yml
       - run: conda info
-      - run: conda list
-      - run: conda config --show
+  create-conda-env:
+    needs: default-shell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: false
+          auto-activate-base: false
+      - run: conda env create --file ./envs/nav.yml
+      - run: conda activate nav
+      - run: conda info
+      - run: conda install -c conda-forge pylint
   #build:
   #  runs-on: ubuntu-latest
   #  strategy:
