@@ -20,7 +20,8 @@ jobs:
         with:
           auto-update-conda: false
           auto-activate-base: false
-      - run: conda env create --file ./envs/nav.yml
+      - run: ls
+      - run: conda env create --file /envs/nav.yml
       - run: conda activate nav
       - run: conda info
       - run: conda install -c conda-forge pylint
