@@ -4,25 +4,29 @@ on: [push]
 
 jobs:
   build:
+    name: Pylint
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -el {0}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.11"]
       
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Miniconda
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
-        python-version: ${{ matrix.python-version }}
-        environment-file: /envs/nav.yml
+        #python-version: ${{ matrix.python-version }}
         activate-environment: nav
+        environment-file: /envs/nav.yml
+    - run: conda info
+    - run: conda list
+    - run: conda config --show
     - name: Install dependencies
       run: |
-        conda update --all
         conda install pylint
     - name: Analysing the code with pylint
       run: |
