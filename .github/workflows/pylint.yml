@@ -9,7 +9,7 @@ jobs:
       run:
         shell: bash -el {0}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout
       - uses: conda-incubator/setup-miniconda@v3
       - run: ls -la
       - run: conda env create --file ../envs/nav.yml
