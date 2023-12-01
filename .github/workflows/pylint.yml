@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
-      - run: conda info
+      - run: ls -la
       - run: conda env create --file ../envs/nav.yml
       - run: conda activate nav
       - run: conda info
