@@ -268,10 +268,22 @@ def plot_map_and_trajectory(
     min_lat = data.LAT.min()
     max_lat = data.LAT.max()
     fig, ax = plt.subplots(1, 1, figsize=(16, 8))
-    ax.contourf(geo_map.lon, geo_map.lat, geo_map.data)
+    contourf = ax.contourf(geo_map.lon, geo_map.lat, geo_map.data, cmap="ocean")
     ax.plot(data.LON, data.LAT, ".r", label="Truth")
     ax.plot(data.iloc[0].LON, data.iloc[0].LAT, "xk", label="Start")
     ax.plot(data.iloc[-1].LON, data.iloc[-1].LAT, "bo", label="Stop")
+
+    # Check the aspect ratio of the current axis
+    aspect_ratio = plt.gca().get_data_ratio()
+
+    # Define colorbar orientation based on the aspect ratio
+    if aspect_ratio > 1:
+        # Wider plot, so place the colorbar horizontally at the bottom
+        colorbar = plt.colorbar(contourf, orientation="horizontal", pad=0.1)
+    else:
+        # Taller plot, so use the default vertical colorbar placement
+        colorbar = plt.colorbar(contourf)
+
     ax.set_xlim([min_lon, max_lon])
     ax.set_ylim([min_lat, max_lat])
     ax.set_xlabel(xlabel_str, fontsize=xlabel_size)
@@ -317,7 +329,7 @@ def plot_estimate(
     min_lat = data.LAT.min()
     max_lat = data.LAT.max()
     fig, ax = plt.subplots(1, 1, figsize=(16, 8))
-    ax.contourf(geo_map.lon, geo_map.lat, geo_map.data)
+    ax.contourf(geo_map.lon, geo_map.lat, geo_map.data, cmap="ocean")
     ax.plot(data.LON, data.LAT, ".r", label="Truth")
     ax.plot(data.iloc[0].LON, data.iloc[0].LAT, "xk", label="Start")
     ax.plot(data.iloc[-1].LON, data.iloc[-1].LAT, "bo", label="Stop")

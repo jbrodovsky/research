@@ -1,0 +1,7 @@
+setup.py
+./src/earth.cpp
+nav_toolbox/__init__.py
+nav_toolbox.egg-info/PKG-INFO
+nav_toolbox.egg-info/SOURCES.txt
+nav_toolbox.egg-info/dependency_links.txt
+nav_toolbox.egg-info/top_level.txt

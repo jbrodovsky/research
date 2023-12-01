@@ -1,0 +1,9 @@
+[build-system]
+requires=["setuptools"]
+build-backend = "setuptools.build_meta
+
+[project]
+name="nav_toolbox"
+version="0.1"
+packages=["nav_toolbox"]
+ext_modules=[Extension("nav_toolbox.earth", sources=["include/earth.hpp"])]
