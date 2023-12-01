@@ -128,7 +128,7 @@ def _get_map_section(
     )
     print(cmd)
     out = subprocess.run(
-        f"conda run -n pygmt {cmd}",
+        cmd
         capture_output=True,
         text=True,
         check=True,

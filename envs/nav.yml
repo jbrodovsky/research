@@ -23,6 +23,7 @@ dependencies:
   - xarray 
   - filterpy 
   - netCDF4
+  - gmt
   # PyINS
   - cython
   # Time series processing
