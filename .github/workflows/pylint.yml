@@ -21,7 +21,7 @@ jobs:
       with:
         #python-version: ${{ matrix.python-version }}
         activate-environment: nav
-        environment-file: /envs/nav.yml
+        environment-file: ~/research/envs/nav.yml
     - run: conda info
     - run: conda list
     - run: conda config --show
