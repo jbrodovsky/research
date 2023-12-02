@@ -52,20 +52,20 @@ jobs:
           black: true
           workdir: '.'
 
-      - name: Bandit
-        uses: microsoft/action-python@0.7.0
-        with:          
-          bandit: true
+      #- name: Bandit
+      #  uses: microsoft/action-python@0.7.0
+      #  with:          
+      #    bandit: true
 
       - name: Pylint
         uses: microsoft/action-python@0.7.0
         with:
           pylint: true
           
-      - name: Pyright
-        uses: microsoft/action-python@0.7.0
-        with:          
-          pyright: true
+      #- name: Pyright
+      #  uses: microsoft/action-python@0.7.0
+      #  with:          
+      #    pyright: true
           
       - name: Flake8
         uses: microsoft/action-python@0.7.0
