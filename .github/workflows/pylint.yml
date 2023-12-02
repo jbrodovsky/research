@@ -2,30 +2,24 @@ name: Pylint
 
 on: [push]
 jobs:
-  example-1:
-    name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
-        python-version: ["3.7", "3.11"]
+  example-3:
+    name: Ex3 Linux
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
+      - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
-      - uses: actions/checkout@v2
         with:
-          auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
-      - name: Conda info
-        shell: bash -el {0}
-        run: conda info
-      - name: Conda list
-        shell: pwsh
-        run: conda list
-      - name: Install dependencies
-        shell: bash -el {0}
-        run: |
-          conda install --file ../envs/nav.yml
+          activate-environment: anaconda-client-env
+          environment-file: etc/example-environment.yml
+          python-version: 3.5
+          condarc-file: etc/example-condarc.yml
+          auto-activate-base: false
+      - run: |
+          conda info
+          conda list
 
 
 #jobs:
