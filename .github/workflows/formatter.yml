@@ -45,6 +45,7 @@ jobs:
   linting:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Black
         uses: microsoft/action-python@0.7.0
         with:
