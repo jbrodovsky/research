@@ -8,4 +8,4 @@ requires = ["setuptools", "wheel"]
 
 [tool.black]
 line-length = 120
-target-version = py312
+target-version = py311
