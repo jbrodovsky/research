@@ -34,11 +34,6 @@
 #          pylint: true
       
 name: Pull Request
-inputs:
-  toml:
-    description: "Path to pyproject.toml"
-    required: true
-    default: "../pyproject.toml"
 on:
   push:
     branches: [ main ]
@@ -54,6 +49,7 @@ jobs:
         uses: microsoft/action-python@0.7.0
         with:
           black: true
+          workdir: '.'
 
       - name: Bandit
         uses: microsoft/action-python@0.7.0
