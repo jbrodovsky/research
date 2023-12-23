@@ -1,0 +1,81 @@
+#name: Format and lint
+
+#on: [push]
+
+#jobs:
+  #default-shell:
+  #  name: Default shell
+  #  runs-on: "ubuntu-latest"
+  #  defaults:
+  #    run:
+  #      shell: bash -el {0}
+  #  steps:
+  #    - uses: actions/checkout@v4
+  #    - uses: conda-incubator/setup-miniconda@v3
+  #      with:
+  #        activate-environment: nav
+  #        environment-file: envs/nav.yml
+  #    - run: conda install pylint
+  #    - run: pylint $(git ls-files '*.py')
+#  linting:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Black
+#        uses: microsoft/action-python@0.7.0
+#        with:
+#          black: true
+#      - name: Flake8
+#        uses: microsoft/action-python@0.7.0
+#        with:
+#          flake8: true
+#      - name: Pylint
+#        uses: microsoft/action-python@0.7.0
+#        with:
+#          pylint: true
+      
+name: Pull Request
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Black
+        uses: microsoft/action-python@0.7.0
+        with:
+          black: true
+          workdir: '.'
+
+      #- name: Bandit
+      #  uses: microsoft/action-python@0.7.0
+      #  with:          
+      #    bandit: true
+
+      - name: Pylint
+        uses: microsoft/action-python@0.7.0
+        with:
+          pylint: true
+          
+      #- name: Pyright
+      #  uses: microsoft/action-python@0.7.0
+      #  with:          
+      #    pyright: true
+          
+      - name: Flake8
+        uses: microsoft/action-python@0.7.0
+        with:          
+          flake8: true
+
+  testing:
+    runs-on: ubuntu-latest
+    steps:    
+      - name: Pytest
+        uses: microsoft/action-python@0.7.0
+        with:          
+          testing: true

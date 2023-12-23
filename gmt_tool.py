@@ -53,9 +53,7 @@ def get_map_section(
     :returns: xarray.DataArray
 
     """
-    _get_map_section(
-        west_lon, east_lon, south_lat, north_lat, map_type, map_res, output_location
-    )
+    _get_map_section(west_lon, east_lon, south_lat, north_lat, map_type, map_res, output_location)
     out = load_map_file(f"{output_location}.nc")
     if not save:
         os.remove(f"{output_location}.nc")
@@ -122,13 +120,10 @@ def _get_map_section(
     else:
         map_name += "_p"
 
-    cmd = (
-        f"gmt grdcut @{map_name} -Rd{west_lon}/{east_lon}/{south_lat}/{north_lat} "
-        f"-G{output_location}.nc"
-    )
+    cmd = f"gmt grdcut @{map_name} -Rd{west_lon}/{east_lon}/{south_lat}/{north_lat} " f"-G{output_location}.nc"
     print(cmd)
     out = subprocess.run(
-        cmd
+        cmd,
         capture_output=True,
         text=True,
         check=True,
@@ -242,12 +237,8 @@ def main() -> None:
             "03m, 02m, 01m, 30s, 15s, 03s, 01s"
         ),
     )
-    parser.add_argument(
-        "--location", default="./", required=False, help="File location to save output."
-    )
-    parser.add_argument(
-        "--name", default="map", required=False, help="Output file name."
-    )
+    parser.add_argument("--location", default="./", required=False, help="File location to save output.")
+    parser.add_argument("--name", default="map", required=False, help="Output file name.")
     # add arguements to the parser for west longitude, east longitude, south latitude,
     # and north latitude
     parser.add_argument(

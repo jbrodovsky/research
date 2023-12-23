@@ -39,3 +39,5 @@ Some notes:
       * Could possibly do all the base coding in C/C++ and easily bind with PyBind11
       * Alternatively, could use SWIG to write multiple bindings, but I don't know SWIG yet
       * If we do go down this route, can leave this as something open-source with source code in C/C++ and contributors adding in bindings
+
+Updated with Pylint workflow
